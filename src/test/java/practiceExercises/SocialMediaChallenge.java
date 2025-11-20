@@ -21,7 +21,7 @@ public class SocialMediaChallenge {
     WebDriver driver;
     SocialMediaPage smp;
 
-
+//this is a test
 
    @BeforeMethod
    void instantiate(){

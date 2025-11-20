@@ -22,6 +22,7 @@ public class SocialMediaChallenge {
     SocialMediaPage smp;
 
 //this is a test
+    //mew test
 
    @BeforeMethod
    void instantiate(){

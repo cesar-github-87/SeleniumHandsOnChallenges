@@ -4,11 +4,13 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.asserts.SoftAssert;
 import pageClasses.*;
 
 import java.time.Duration;
@@ -20,9 +22,8 @@ import java.util.Map;
 public class SocialMediaChallenge {
     WebDriver driver;
     SocialMediaPage smp;
+    WebDriverWait wait;
 
-//this is a test
-    //mew test
 
    @BeforeMethod
    void instantiate(){
@@ -92,9 +93,10 @@ public class SocialMediaChallenge {
          */
 
         //Click on all posts
-        smp = new SocialMediaPage(driver);
+        //smp = new SocialMediaPage(driver);
 
         smp.waitForPostsToLoad();
+
 
         List<Map<String, WebElement>> posts =  smp.getAllPosts();
 
@@ -117,13 +119,40 @@ public class SocialMediaChallenge {
         Integer afterDislikeCount = Integer.parseInt(posts.get(1).get("likesText").getText().replace("likes", "").trim());
 
         //Verify count after dislike
-        Assert.assertEquals(afterDislikeCount, beforeDislikeCount-1);
+
+        Assert.assertEquals(afterDislikeCount, beforeDislikeCount-1, "not equal");
 
         //Verify Heart icon is no longer filled
         Assert.assertFalse(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getAttribute("class").contains("MuiSvgIcon-colorError"),"Heart appears to be filled");
+        driver.close();
+    }
+
+    @Test
+    void smf003GenerateNotification() throws InterruptedException {
+    /*
+    *   Verificar que el badge no tenga un numero desplegado
+    *   Click like on a post
+        Check notification badge shows count increment
+        Open notifications modal
+        * Verifica que el mensaje sea de like
+        Verify new notification text is displayed with a dot
+    * */
+        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        List <Map<String, WebElement>> posts = smp.getAllPosts();
+
+        //WebElement notifBell = driver.findElement(By.xpath("//button[contains(@class, 'MuiIconButton-root')]//span[contains(@class, 'MuiBadge-root')]"));
 
 
+        //System.out.println("TextoBefore :" +notifCount.getText());
+        posts.get(1).get("likeButton").click();
+        Thread.sleep(3000);
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//button[contains(@class, 'MuiIconButton-root') and .//span[contains(@class, 'MuiBadge-root')]]")));
+        WebElement notifBell =  driver.findElement(By.xpath("//button[contains(@class, 'MuiIconButton-root') and .//span[contains(@class, 'MuiBadge-root')]]"));
+        WebElement notifCount =  notifBell.findElement(By.xpath(".//span[contains(@class, 'MuiBadge-badge')]"));
 
+        notifBell.click();
+
+        System.out.println("TextoAfter :" + notifCount.getText());
 
 
 

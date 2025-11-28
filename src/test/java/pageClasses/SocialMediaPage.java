@@ -62,6 +62,22 @@ public class SocialMediaPage {
 
     }
 
+    public WebElement getNoticationBell(){
+            return driver.findElement(By.xpath("//div[contains(@class,'pr-6')]//button"));
+
+    }
+
+    public WebElement getNotificationCounter(){
+            return this.getNoticationBell().findElement(By.xpath(".//span[contains(@class, 'MuiBadge-badge')]"));
+    }
+
+    public WebElement getNotificationText(){
+            return this.driver.findElement(By.xpath("//div[contains(@class, 'shadow-lg')]"));
+    }
+
+
+   // public Map<String, >
+
 
 
 }

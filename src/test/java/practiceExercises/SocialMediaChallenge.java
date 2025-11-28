@@ -1,20 +1,14 @@
 package practiceExercises;
-import com.sun.source.tree.AssertTree;
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.testng.asserts.SoftAssert;
 import pageClasses.*;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -129,32 +123,131 @@ public class SocialMediaChallenge {
 
     @Test
     void smf003GenerateNotification() throws InterruptedException {
-    /*
-    *   Verificar que el badge no tenga un numero desplegado
-    *   Click like on a post
-        Check notification badge shows count increment
-        Open notifications modal
-        * Verifica que el mensaje sea de like
-        Verify new notification text is displayed with a dot
-    * */
-        wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        WebElement windowTop = driver.findElement(By.xpath("//div[contains(@class,'MuiBox-root')]//h6[contains(text(), 'Background')]"));
         List <Map<String, WebElement>> posts = smp.getAllPosts();
 
-        //WebElement notifBell = driver.findElement(By.xpath("//button[contains(@class, 'MuiIconButton-root')]//span[contains(@class, 'MuiBadge-root')]"));
-
-
-        //System.out.println("TextoBefore :" +notifCount.getText());
+        //LIKE,  CHECK LIKE HEART, AND NOTIFICATION COUNTER IS 1
         posts.get(1).get("likeButton").click();
-        Thread.sleep(3000);
-        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//button[contains(@class, 'MuiIconButton-root') and .//span[contains(@class, 'MuiBadge-root')]]")));
-        WebElement notifBell =  driver.findElement(By.xpath("//button[contains(@class, 'MuiIconButton-root') and .//span[contains(@class, 'MuiBadge-root')]]"));
-        WebElement notifCount =  notifBell.findElement(By.xpath(".//span[contains(@class, 'MuiBadge-badge')]"));
+        String heartColor = posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color"));
+        System.out.println("Filled heart color: "+ heartColor);
+        Assert.assertTrue(heartColor.contains("211, 47, 47"));
+        Assert.assertTrue(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getAttribute("class").contains("MuiSvgIcon-colorError"),"Heart appears to be unfilled");
 
-        notifBell.click();
+        WebElement notifBell = smp.getNoticationBell();
+       // WebElement notifCount = smp.getNotificationCounter();
 
-        System.out.println("TextoAfter :" + notifCount.getText());
+        Assert.assertEquals(Integer.parseInt(smp.getNotificationCounter().getText()),1,"not equal");
 
 
+        /*Actions actions = new Actions(driver);
+        actions.moveToElement(windowTop).perform();*/
+
+
+
+        //DISLIKE AND CHECK LIKE HEART COLOR AND VERIFY COUNTER EQUALS 2
+        posts.get(1).get("likeButton").click();
+        heartColor = posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color"));
+        System.out.println("Unfilled heart color: "+ heartColor);
+        Assert.assertTrue(heartColor.contains("0, 0, 0"));
+        Assert.assertFalse(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getAttribute("class").contains("MuiSvgIcon-colorError"),"Heart appears to be filled");
+
+
+        Assert.assertEquals(Integer.parseInt(smp.getNotificationCounter().getText()),2,"not equal");
+
+        //VERIFY NOTIFICATION BACKGROUND COLOR
+        Assert.assertTrue(smp.getNotificationCounter().getCssValue("background-color").contains("211, 47, 47"), "No Notification counter");
+
+
+
+        System.out.println("Color of notification counter: " + smp.getNotificationCounter().getCssValue("background-color"));
+        System.out.println("Notification Counter: "+ smp.getNotificationCounter().getText());
+
+        driver.quit();
+    }
+
+    @Test
+    void smf004_MarkNotificatiosAsSeen(){
+       /*
+       *Click like on a post to generate notification
+        Verify badge shows count
+        Open notifications modal
+        Verify notification dot is removed and text is gray
+        Close modal and confirm badge count is 0
+       * */
+
+        WebElement windowTop = driver.findElement(By.xpath("//div[contains(@class,'MuiBox-root')]//h6[contains(text(), 'Background')]"));
+
+        List <Map<String, WebElement>> posts = smp.getAllPosts();
+
+        posts.get(2).get("likeButton").click();
+        System.out.println(smp.getNotificationCounter().getText());
+        Assert.assertEquals(Integer.parseInt(smp.getNotificationCounter().getText()),1, "not counting");
+
+        Actions action = new Actions(driver);
+        action.moveToElement(windowTop).perform();
+
+        smp.getNoticationBell().click();
+
+        //VERIFY NOTIFICATION DOT IS REMOVED -usando su clase porque no se como funciona el CSS en este caso.
+        Assert.assertFalse(smp.getNotificationCounter().getAttribute("class").contains("MuiBadge-insvisible"));
+        System.out.println(smp.getNotificationCounter().getCssValue("background-color"));
+
+        //VERIFY TEXT IS GRAY
+        List<WebElement> notifications = smp.getNotificationText().findElements(By.xpath("//p[contains (@class, \"css-by7j5z\")]"));
+
+        for(WebElement notif : notifications){
+            System.out.println(notif.getText());
+            System.out.println((notif.getCssValue("color")));
+            Assert.assertTrue(notif.getCssValue("color").contains("0.707 0.022 261.325"));
+        }
+
+
+        action.sendKeys(Keys.ESCAPE).perform();
+        System.out.println(smp.getNotificationCounter().getText());
+        Assert.assertEquals(Integer.parseInt(smp.getNotificationCounter().getText()),0, "Counter more than 0");
+
+        driver.close();
+
+    }
+
+    @Test
+    void smf005_Like_Multiple_Posts(){
+        /*
+        *Like multiple posts and confirm each maintains independent state
+
+        Steps to Execute:
+        * Like the first post
+        * Like the second post
+        * Verify both posts show incremented counts and filled hearts
+        * Verify other posts remain unaffected
+        * */
+
+        Actions action = new Actions(driver);
+        List <Map<String, WebElement>> posts =  smp.getAllPosts();
+
+        int firstPostLikes = Integer.parseInt(posts.get(0).get("likesText").getText().replace("likes", "").trim());
+        int secondPostLikes = Integer.parseInt(posts.get(1).get("likesText").getText().replace("likes", "").trim());
+
+        System.out.println(firstPostLikes);
+        System.out.println(secondPostLikes);
+
+
+
+      //  action.moveToElement(likeButton).perform();
+        posts.get(0).get("likeButton").click();
+        posts.get(1).get("likeButton").click();
+
+        int firstPostNewLikes = Integer.parseInt(posts.get(0).get("likesText").getText().replace("likes", "").trim());
+        int secondPostNewLikes = Integer.parseInt(posts.get(1).get("likesText").getText().replace("likes", "").trim());
+
+        Assert.assertEquals(firstPostNewLikes, firstPostLikes+1, "Not Equal");
+        Assert.assertEquals(secondPostNewLikes, secondPostLikes+1, "Not Equal");
+
+        Assert.assertTrue(posts.get(0).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color")).contains("211, 47, 47"));
+        Assert.assertTrue(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color")).contains("211, 47, 47"));
+        Assert.assertFalse(posts.get(2).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color")).contains("211, 47, 47"));
+
+        driver.close();
 
     }
 

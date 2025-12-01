@@ -75,9 +75,4 @@ public class SocialMediaPage {
             return this.driver.findElement(By.xpath("//div[contains(@class, 'shadow-lg')]"));
     }
 
-
-   // public Map<String, >
-
-
-
 }

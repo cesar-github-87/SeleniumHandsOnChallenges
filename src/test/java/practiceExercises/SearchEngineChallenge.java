@@ -2,8 +2,10 @@ package practiceExercises;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.interactions.Actions;
+import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -11,7 +13,9 @@ import org.testng.asserts.SoftAssert;
 import pageClasses.*;
 
 import java.time.Duration;
+import java.util.EventListener;
 import java.util.List;
+import java.lang.Thread;
 import java.util.Map;
 
 public class SearchEngineChallenge {
@@ -54,14 +58,64 @@ public class SearchEngineChallenge {
             sa.assertNotNull(result.findElement(By.xpath(".//a")).getAttribute("href"),"Title is not clickable, href attribute non existing");
             sa.assertTrue(result.findElement(By.xpath(".//a")).isEnabled(),"Link not clickable - Disabled");
             sa.assertTrue(result.findElement(By.xpath(".//p[contains(@class , 'text-green-700')]")).getText().contains("https://www.cnarios.com"), "No URL page");
-            sa.assertTrue(result.findElement(By.xpath(".//p[contains(@class , 'text-slate-70')]")).isDisplayed(), "Snippet not Displayed");
+            System.out.println("Snip: "+ result.findElement(By.xpath(".//p[contains(@class , 'text-slate-70')]")).getText());
+            sa.assertTrue(result.findElement(By.xpath(".//p[contains(@class , 'text-slate-700')]")).isDisplayed(), "Snippet not Displayed");
         });
 
-        //Assert.assertEquals(results.size(), 3);
 
 
     }
 
+    @Test
+    void SSE_002_Attempt_search_with_empty_input(){
+        /*
+            * Ensure the search input is empty
+              Click the search button
+              Verify results section remains empty
+        */
+        this.pm.searchEnginePage().fillSearchBar("");
+        this.pm.searchEnginePage().clickSearchbutton();
+        driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(3));
+        List<WebElement> results = driver.findElements(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]"));
+
+        if(results.isEmpty()){
+            System.out.println("No results found");
+            Assert.assertTrue(true, "Results not available");
+        }else{
+            System.out.println(" results found");
+            Assert.assertFalse(results.get(0).isDisplayed(), "Results section should not be displayed");
+        }
+
+    }
+
+    @Test
+    void SSE_003_ReUse_old_search_after_reRender() throws InterruptedException {
+        /*Locate the search input and enter 'Flights to London'
+        Click the search button
+        Wait for search results to load (input re-renders)
+        Attempt to type into the old input handle
+        Observe stale element exception
+        Recover by re-locating the search input and enter 'Hotels in Paris'*/
+
+        WebElement field = driver.findElement(By.xpath("//input"));
+        field.sendKeys("Flight to London");
+        this.pm.searchEnginePage().clickSearchbutton();
+
+
+
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]")));
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input")));
+        field.sendKeys(Keys.CONTROL + "a");
+        field.sendKeys(Keys.DELETE);
+        field.sendKeys("Flight to Paris");
+    }
+
+    @AfterClass
+    void tearDown(){
+        driver.quit();
+    }
 
 
 

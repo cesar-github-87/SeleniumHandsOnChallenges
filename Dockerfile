@@ -1,5 +1,5 @@
 # 1. ETAPA DE CONSTRUCCIÓN: Compilar el código Java
-FROM maven:3.8.7-jdk-17 AS build
+FROM maven:latest AS build
 WORKDIR /app
 # Copia el archivo pom.xml para descargar dependencias primero (mejora la caché)
 COPY pom.xml .

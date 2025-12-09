@@ -112,6 +112,12 @@ public class SearchEngineChallenge {
         field.sendKeys("Flight to Paris");
     }
 
+    @Test
+    void SSE_004_Second_Valid_Search(){
+
+    }
+
+
     @AfterClass
     void tearDown(){
         driver.quit();

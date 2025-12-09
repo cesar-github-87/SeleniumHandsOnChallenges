@@ -26,7 +26,7 @@ pipeline {
                     //   en el directorio /app del contenedor, permitiendo el acceso al JAR
                     //   y la escritura de los reportes.
                     // --rm: Elimina el contenedor inmediatamente después de que termina.
-                    sh 'docker run --rm -v $PWD:/app selenium-java-tests'
+                    sh 'docker run --rm -v $PWD:/app selenium-java-tests java -jar /app/target/SeleniumOnHandsChallenges-1.0-SNAPSHOT.jar'
                 }
             }
         }

@@ -21,22 +21,25 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                    // 1. Asegurar que el directorio de reportes exista en el HOST
-                 sh 'mkdir -p target/surefire-reports'
+                 // 1. **Asegurar que el directorio de reportes exista en el HOST**
+                    sh 'mkdir -p target/surefire-reports'
                     
-                    // 2. CREAMOS UN CONTENEDOR NUEVO (sin volúmenes externos conflictivos)
+                    // 2. CREAMOS UN CONTENEDOR NUEVO (en estado 'Created')
                     sh 'docker create --name maven-runner -w /app selenium-java-tests tail -f /dev/null'
                     
                     // 3. COPIAMOS el workspace de Jenkins AL contenedor
                     sh 'docker cp $WORKSPACE/. maven-runner:/app'
                     
-                    // 4. EJECUTAMOS MAVEN DENTRO del contenedor
+                    // 4. PASO FALTANTE: INICIAR EL CONTENEDOR
+                    sh 'docker start maven-runner' // <--- ¡Añadido!
+                    
+                    // 5. EJECUTAMOS MAVEN DENTRO del contenedor
                     sh 'docker exec maven-runner mvn clean test'
                     
-                    // 5. COPIAMOS los reportes DE VUELTA al workspace
+                    // 6. COPIAMOS los reportes DE VUELTA al workspace
                     sh 'docker cp maven-runner:/app/target/surefire-reports $WORKSPACE/target/'
                     
-                    // 6. DETENER y ELIMINAR el contenedor temporal
+                    // 7. DETENER y ELIMINAR el contenedor temporal
                     sh 'docker rm -f maven-runner'
                 }
             }

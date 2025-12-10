@@ -6,118 +6,148 @@ pipeline {
     }
 
     stages {
+        stage('Validate Project') {
+            steps {
+                script {
+                    sh '''
+                        echo "=== Project Validation ==="
+                        echo "Workspace: ${WORKSPACE}"
+                        echo "Files:"
+                        ls -la
+                        echo ""
+                        echo "pom.xml:"
+                        [ -f "pom.xml" ] && echo "✓ Found" || { echo "✗ Missing!"; exit 1; }
+                        echo ""
+                        echo "Test files:"
+                        find src/test -name "*.java" -type f 2>/dev/null | head -5 || echo "No test files found"
+                    '''
+                }
+            }
+        }
+
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t selenium-java-tests .'
-                }
-            }
-        }
-        stage('Debug Docker Copy') {
-            steps {
-                script {
+                    // Build with explicit copying
                     sh '''
-                        echo "=== What files exist in workspace? ==="
-                        ls -la
-                        echo ""
-                        echo "Is pom.xml present?"
-                        ls -la pom.xml || echo "pom.xml NOT FOUND!"
-                        echo ""
-                        echo "Project structure:"
-                        find . -type f -name "*.java" | head -10
-                        find . -type f -name "pom.xml"
+                        cat > Dockerfile << 'EOF'
+FROM maven:3.9-eclipse-temurin-17
 
-                        echo ""
-                        echo "=== Testing Docker build manually ==="
-                        # Create a simple test Dockerfile
-                        cat > Dockerfile.test << 'EOF'
-        FROM alpine:latest
-        COPY . /test-copy/
-        RUN ls -la /test-copy/ && \
-            echo "=== Looking for pom.xml ===" && \
-            find /test-copy -name "pom.xml" -type f && \
-            echo "=== Looking for Java files ===" && \
-            find /test-copy -name "*.java" -type f | head -5
-        EOF
+# Install Chrome
+RUN apt-get update && \
+    apt-get install -y wget unzip && \
+    wget -q https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb && \
+    apt-get install -y ./google-chrome-stable_current_amd64.deb && \
+    rm google-chrome-stable_current_amd64.deb && \
+    apt-get clean
 
-                        docker build -f Dockerfile.test -t test-copy .
-                        docker run --rm test-copy
+WORKDIR /workspace
+
+# Chrome is installed, Maven is pre-installed
+# We'll mount the workspace at runtime
+EOF
+
+                        docker build -t selenium-java-tests .
                     '''
                 }
             }
         }
 
-        stage('Run Selenium Tests') {
+        stage('Run Tests with Mount') {
             steps {
                 script {
-                    // Clean up previous container
-                    sh 'docker rm -f selenium-test-runner || true'
-
-                    // Clean target directory
-                    sh 'rm -rf target && mkdir -p target'
-
-                    echo "Running Selenium tests in Docker container..."
-
-                    // Run tests with explicit output
                     sh '''
-                        docker run --name selenium-test-runner \
-                            -v ${WORKSPACE}:/app \
-                            -w /app \
+                        echo "=== Running Tests ==="
+                        # Clean up
+                        docker rm -f test-runner 2>/dev/null || true
+
+                        # Run tests with workspace mounted
+                        docker run --rm \
+                            --name test-runner \
+                            -v ${WORKSPACE}:/workspace \
+                            -w /workspace \
                             --shm-size=2g \
                             selenium-java-tests \
-                            mvn clean test -X 2>&1 | tee maven-output.log
-                    '''
+                            bash -c "
+                                echo 'Current directory: \$(pwd)'
+                                echo 'Files in workspace:'
+                                ls -la
+                                echo ''
+                                echo 'Running Maven tests...'
+                                mvn clean test -DskipTests=false
+                            " 2>&1 | tee test-output.log
 
-                    // Check the output
-                    sh '''
-                        echo "=== Checking Maven output ==="
-                        grep -A5 -B5 "Tests run:" maven-output.log || echo "No test summary found"
-                        grep -i "BUILD" maven-output.log || echo "No build status found"
-                    '''
-                }
-            }
-        }
-
-        stage('Verify Reports') {
-            steps {
-                script {
-                    sh '''
-                        echo "=== Looking for test reports ==="
-                        echo "Current directory: $(pwd)"
                         echo ""
-                        echo "All files in workspace:"
-                        ls -la
-                        echo ""
-                        echo "Target directory contents:"
-                        ls -la target/ 2>/dev/null || echo "No target directory"
-                        echo ""
-                        echo "Searching for XML files:"
-                        find . -name "*.xml" -type f 2>/dev/null | grep -v ".git" | head -20
-                        echo ""
-                        echo "Checking surefire-reports directory:"
-                        ls -la target/surefire-reports/ 2>/dev/null || echo "No surefire-reports directory"
-                        echo ""
-                        echo "If no reports, checking if tests compiled:"
-                        find . -name "*Test.class" -type f 2>/dev/null | head -5
+                        echo "=== Test Summary ==="
+                        if grep -q "Tests run:" test-output.log; then
+                            echo "SUCCESS: Tests executed!"
+                            grep -A2 "Tests run:" test-output.log
+                        else
+                            echo "FAILURE: No tests executed"
+                            echo "Last 30 lines:"
+                            tail -30 test-output.log
+                            # Don't fail yet, let's debug more
+                        fi
                     '''
                 }
             }
         }
 
-        stage('Publish Reports') {
+        stage('Debug If Failed') {
+            when {
+                expression {
+                    // Check if tests didn't run
+                    return sh(script: 'grep -q "Tests run:" test-output.log 2>/dev/null || true', returnStatus: true) != 0
+                }
+            }
             steps {
                 script {
-                    // Try multiple possible locations
-                    echo "Attempting to publish test reports..."
+                    sh '''
+                        echo "=== DEBUG: Why no tests? ==="
+                        echo "1. Checking if Maven can find project..."
+                        docker run --rm \
+                            -v ${WORKSPACE}:/workspace \
+                            -w /workspace \
+                            selenium-java-tests \
+                            mvn help:evaluate -Dexpression=project.name -q -DforceStdout 2>&1 || echo "Maven error"
 
-                    // Method 1: Standard location
-                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+                        echo ""
+                        echo "2. Checking test classes..."
+                        docker run --rm \
+                            -v ${WORKSPACE}:/workspace \
+                            -w /workspace \
+                            selenium-java-tests \
+                            find . -name "*Test.java" -type f 2>/dev/null | head -10
 
-                    // Method 2: Any XML in target
-                    junit testResults: 'target/*.xml', allowEmptyResults: true
+                        echo ""
+                        echo "3. Trying to compile tests..."
+                        docker run --rm \
+                            -v ${WORKSPACE}:/workspace \
+                            -w /workspace \
+                            selenium-java-tests \
+                            mvn clean compile test-compile 2>&1 | tail -20
+                    '''
+                }
+            }
+        }
 
-                    // Method 3: Search recursively
-                    junit testResults: '**/TEST-*.xml', allowEmptyResults: true
+        stage('Publish Results') {
+            steps {
+                script {
+                    sh '''
+                        echo "=== Checking for Reports ==="
+                        if [ -d "target/surefire-reports" ] && ls target/surefire-reports/*.xml 1>/dev/null 2>&1; then
+                            echo "Found test reports:"
+                            ls -la target/surefire-reports/
+                            echo "Publishing..."
+                        else
+                            echo "WARNING: No test reports found"
+                            echo "Creating test directory structure..."
+                            mkdir -p target/surefire-reports
+                        fi
+                    '''
+
+                    junit 'target/surefire-reports/*.xml'
                 }
             }
         }
@@ -126,22 +156,9 @@ pipeline {
     post {
         always {
             script {
-                // Clean up
-                sh 'docker rm -f selenium-test-runner || true'
+                archiveArtifacts artifacts: 'test-output.log', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'target/surefire-reports/*.xml', allowEmptyArchive: true
                 sh 'docker system prune -f'
-
-                // Archive everything for debugging
-                archiveArtifacts artifacts: 'maven-output.log', allowEmptyArchive: true
-                archiveArtifacts artifacts: 'target/**/*', allowEmptyArchive: true
-
-                // Archive test reports if they exist
-                sh '''
-                    if ls target/surefire-reports/*.xml 2>/dev/null; then
-                        echo "Test reports found, archiving..."
-                    else
-                        echo "No test reports to archive"
-                    fi
-                '''
             }
         }
     }

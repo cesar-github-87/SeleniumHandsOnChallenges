@@ -24,7 +24,7 @@ pipeline {
                    // Ejecuta la imagen confiando en su CMD interno (que usa /app/tests.jar).
                     // Añadimos el Bind Mount SÓLO para que los reportes de Surefire sean escritos
                     // de vuelta al WORKSPACE de Jenkins para ser publicados en la siguiente etapa.
-                    sh 'docker run --rm -v $PWD:/app -v /root/.m2:/root/.m2 selenium-java-tests mvn clean test'
+                    sh 'docker run --rm -w /app -v $PWD:/app -v $PWD/m2-cache:/root/.m2 -v $PWD/target/surefire-reports:/app/target/surefire-reports selenium-java-tests mvn clean test'
                 }
             }
         }

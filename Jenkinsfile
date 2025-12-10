@@ -13,6 +13,39 @@ pipeline {
                 }
             }
         }
+        stage('Debug Docker Copy') {
+            steps {
+                script {
+                    sh '''
+                        echo "=== What files exist in workspace? ==="
+                        ls -la
+                        echo ""
+                        echo "Is pom.xml present?"
+                        ls -la pom.xml || echo "pom.xml NOT FOUND!"
+                        echo ""
+                        echo "Project structure:"
+                        find . -type f -name "*.java" | head -10
+                        find . -type f -name "pom.xml"
+
+                        echo ""
+                        echo "=== Testing Docker build manually ==="
+                        # Create a simple test Dockerfile
+                        cat > Dockerfile.test << 'EOF'
+        FROM alpine:latest
+        COPY . /test-copy/
+        RUN ls -la /test-copy/ && \
+            echo "=== Looking for pom.xml ===" && \
+            find /test-copy -name "pom.xml" -type f && \
+            echo "=== Looking for Java files ===" && \
+            find /test-copy -name "*.java" -type f | head -5
+        EOF
+
+                        docker build -f Dockerfile.test -t test-copy .
+                        docker run --rm test-copy
+                    '''
+                }
+            }
+        }
 
         stage('Run Selenium Tests') {
             steps {

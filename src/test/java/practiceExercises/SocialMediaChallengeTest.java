@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 
-public class SocialMediaChallenge {
+public class SocialMediaChallengeTest {
     ChromeOptions options;
     WebDriver driver;
     SocialMediaPage smp;

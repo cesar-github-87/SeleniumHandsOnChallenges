@@ -24,10 +24,44 @@ pipeline {
                 }
             }
         }
-
         stage('Run Tests') {
             steps {
                 script {
+                    // Asegura que el directorio de reportes exista en el HOST
+                    sh 'mkdir -p target/surefire-reports'
+
+                    sh '''
+                        echo "=== Running Tests ==="
+
+                        docker run --rm \
+                            --shm-size=2g \
+                            -u root \
+                            -w /app \
+
+                            # 1. MONTAJE COMPLETO DEL CÓDIGO Y POM.XML
+                            -v ${WORKSPACE}:/app \
+
+                            # 2. MONTAJE DEL CACHÉ DE MAVEN
+                            -v ${WORKSPACE}/m2-cache:/root/.m2 \
+
+                            # 3. MONTAJE ESPECÍFICO DEL DIRECTORIO DE REPORTES
+                            # Esto asegura que Surefire escriba los reportes al Host.
+                            -v ${WORKSPACE}/target/surefire-reports:/app/target/surefire-reports \
+
+                            selenium-java-tests \
+
+                            # Ejecuta Maven de forma limpia y ejecuta las pruebas
+                            mvn clean test
+                    '''
+                }
+            }
+        }
+/*
+        stage('Run Tests') {
+            steps {
+                script {
+                    sh 'mkdir -p target/surefire-reports'
+
                     sh '''
                         echo "=== Running Tests ==="
 
@@ -43,11 +77,29 @@ pipeline {
                     '''
                 }
             }
-        }
+        }*/
 
         // REMOVED 'Get Results' STAGE - It is no longer needed because of the volume mount
-
         stage('Publish Results') {
+            steps {
+                script {
+                    // 1. CORRECCIÓN CLAVE: Asegurar permisos de lectura/escritura (777)
+                    // Esto permite que el usuario de Jenkins lea los archivos creados por el usuario 'root' de Docker.
+                    sh 'chmod -R 777 target/surefire-reports'
+
+                    // 2. Comprobación (Opcional, pero útil)
+                    sh 'ls -la target/surefire-reports/ || echo "Directory not found"'
+
+                    // 3. Publicación de Resultados
+                    junit 'target/surefire-reports/*.xml'
+
+                    // 4. LIMPIEZA FINAL (Asegurar que el contenedor temporal se elimine si Run Tests falló antes de la limpieza)
+                    // Nota: Este paso debe estar en 'post' o en 'Run Tests', pero lo dejamos aquí para asegurar.
+                    sh 'docker rm -f maven-runner || true'
+                }
+            }
+        }
+        /*stage('Publish Results') {
             steps {
                 script {
                     sh 'ls -la target/surefire-reports/ || echo "Directory not found"'
@@ -55,7 +107,7 @@ pipeline {
                 }
             }
         }
-    }
+    }*/
 
     post {
         always {

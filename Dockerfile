@@ -1,4 +1,4 @@
-FROM maven:3.9-eclipse-temurin-17
+FROM maven:3.9.9-amazoncorretto-21-al2023
 
 # Install Chrome without gpg (using apt-key deprecation workaround)
 RUN apt-get update && \

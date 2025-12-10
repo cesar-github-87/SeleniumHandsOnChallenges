@@ -1,30 +1,16 @@
-# 1. ETAPA DE CONSTRUCCIÓN: Compilar el código Java
-FROM maven:latest AS build
-WORKDIR /app
-# Copia el archivo pom.xml para descargar dependencias primero (mejora la caché)
-COPY pom.xml .
-# Descarga las dependencias (si hay cambios en el pom.xml)
-RUN mvn dependency:go-offline
-# Copia el código fuente
-COPY src /app/src
-# Compila y empaqueta el proyecto
-RUN mvn clean package -DskipTests
-
-# 2. ETAPA DE EJECUCIÓN: Entorno liviano con Java y un navegador
-# Usamos una imagen que tiene Java y los navegadores de Selenium listos
+# Usamos una imagen que tenga Java y los navegadores de Selenium
 FROM selenium/standalone-chrome:latest
 
-# Instala el entorno Java Runtime Environment (JRE) necesario para correr el JAR
-# Esta imagen base de Selenium ya incluye Java, pero si usaras una imagen base diferente,
-# necesitarías un paso como: RUN apt-get update && apt-get install -y openjdk-17-jre
+# Instalar Maven y otras herramientas necesarias
+# Esto depende de si la imagen base de Selenium (basada en Debian) lo necesita
+USER root
+RUN apt-get update && apt-get install -y maven \ 
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Define el directorio de trabajo
-WORKDIR /app
+WORKDIR /app 
 
-# Copia el archivo JAR compilado desde la etapa 'build'
-# Reemplaza 'nombre-de-tu-proyecto' con el nombre real de tu JAR
-COPY --from=build /app/target/SeleniumOnHandsChallenges-1.0-SNAPSHOT.jar /app/tests.jar
+# Copia el código fuente (pom.xml, src/)
+COPY . /app/ 
 
-# Establece el comando predeterminado para correr las pruebas.
-# Nota: Tendrás que configurar tu JAR para que inicie la ejecución de pruebas al ejecutarse.
-CMD ["java", "-jar", "tests.jar"]
+# Ya no necesitas el CMD, ya que lo sobrescribes en el Jenkinsfile con 'mvn clean test'
+# CMD ["java", "-jar", "tests.jar"]

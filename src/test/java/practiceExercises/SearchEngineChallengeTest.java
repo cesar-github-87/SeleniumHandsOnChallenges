@@ -104,8 +104,10 @@ public class SearchEngineChallengeTest {
 
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]")));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input")));
+        field = driver.findElement(By.xpath("//input"));
         field.sendKeys(Keys.CONTROL + "a");
         field.sendKeys(Keys.DELETE);
         field.sendKeys("Flight to Paris");

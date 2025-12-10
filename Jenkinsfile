@@ -18,33 +18,61 @@ pipeline {
             }
         }
 
-        stage('Run Selenium Tests') {
-            steps {
-                script {
-                    sh 'docker rm -f maven-runner || true'
-                 // 1. **Asegurar que el directorio de reportes exista en el HOST**
-                    sh 'mkdir -p target/surefire-reports'
-                    
-                    // 2. CREAMOS UN CONTENEDOR NUEVO (en estado 'Created')
-                    sh 'docker create --name maven-runner -w /app selenium-java-tests tail -f /dev/null'
-                    
-                    // 3. COPIAMOS el workspace de Jenkins AL contenedor
-                    sh 'docker cp $WORKSPACE/. maven-runner:/app'
-                    
-                    // 4. PASO FALTANTE: INICIAR EL CONTENEDOR
-                    sh 'docker start maven-runner' // <--- ¡Añadido!
-                    
-                    // 5. EJECUTAMOS MAVEN DENTRO del contenedor
-                    sh 'docker exec maven-runner mvn clean test'
-                    
-                    // 6. COPIAMOS los reportes DE VUELTA al workspace
-                    sh 'docker cp maven-runner:/app/target/surefire-reports $WORKSPACE/target/'
-                    
-                    // 7. DETENER y ELIMINAR el contenedor temporal
-                    sh 'docker rm -f maven-runner'
-                }
-            }
-        }
+       stage('Run Selenium Tests') {
+           steps {
+               script {
+                   // Clean up
+                   sh "docker rm -f ${CONTAINER_NAME} || true"
+
+                   // Create target directory
+                   sh 'mkdir -p target/surefire-reports'
+
+                   try {
+                       // Create and start container
+                       sh "docker run -d --name ${CONTAINER_NAME} -w /app selenium-java-tests tail -f /dev/null"
+
+                       // Copy current workspace to container
+                       sh "docker cp ${WORKSPACE}/. ${CONTAINER_NAME}:/app/"
+
+                       // Run tests with verbose output
+                       sh "docker exec ${CONTAINER_NAME} mvn clean test -X"
+
+                       // Wait a moment for files to be written
+                       sleep 5
+
+                       // Copy reports back - with multiple fallback options
+                       sh """
+                           # Try to copy reports
+                           docker cp ${CONTAINER_NAME}:/app/target/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
+                           echo "Primary reports directory not found, trying alternatives..."
+
+                           # Try alternative locations
+                           docker cp ${CONTAINER_NAME}:/target/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
+                           docker cp ${CONTAINER_NAME}:/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
+                           echo "Could not find test reports"
+
+                           # List what was actually generated in container
+                           docker exec ${CONTAINER_NAME} find / -name "TEST-*.xml" 2>/dev/null | head -20
+                       """
+
+                   } catch (Exception e) {
+                       echo "Error during test execution: ${e.toString()}"
+
+                       // Try to get container logs for debugging
+                       sh "docker logs ${CONTAINER_NAME} || true"
+
+                       // Try to salvage any existing reports
+                       sh """
+                           docker cp ${CONTAINER_NAME}:/app ${WORKSPACE}/container-content/ 2>/dev/null || true
+                           find ${WORKSPACE} -name "*.xml" -type f | head -10
+                       """
+
+                       // Don't fail the stage yet, let the report publishing handle it
+                       currentBuild.result = 'UNSTABLE'
+                   }
+               }
+           }
+       }
 
         stage('Publish Reports') {
             steps {

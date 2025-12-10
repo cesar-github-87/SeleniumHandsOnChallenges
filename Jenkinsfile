@@ -21,6 +21,7 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
+                    sh 'docker rm -f maven-runner || true'
                  // 1. **Asegurar que el directorio de reportes exista en el HOST**
                     sh 'mkdir -p target/surefire-reports'
                     

@@ -21,10 +21,15 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                   // Ejecuta la imagen confiando en su CMD interno (que usa /app/tests.jar).
-                    // Añadimos el Bind Mount SÓLO para que los reportes de Surefire sean escritos
-                    // de vuelta al WORKSPACE de Jenkins para ser publicados en la siguiente etapa.
-                    sh 'docker run --rm -w /app -v $PWD:/app -v $PWD/m2-cache:/root/.m2 -v $PWD/target/surefire-reports:/app/target/surefire-reports selenium-java-tests mvn clean test'
+                  // Nota: Asegúrate de que tu Dockerfile tenga 'USER root' al final o no lo cambie
+                    sh 'docker run --rm -w /app ' +
+                       // 1. Montaje de Código: $PWD es el workspace local del agente
+                       '-v $PWD:/app ' +
+                       // 2. Montaje de la Cache M2: Usa $PWD para la cache en el host
+                       '-v $PWD/m2-cache:/root/.m2 ' +
+                       // 3. Montaje de Reportes:
+                       '-v $PWD/target/surefire-reports:/app/target/surefire-reports ' +
+                       'selenium-java-tests mvn clean test'
                 }
             }
         }

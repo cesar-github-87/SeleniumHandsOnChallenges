@@ -1,9 +1,7 @@
 pipeline {
-    // 1. Ejecutar el pipeline en cualquier agente de Jenkins que tenga el cliente Docker
     agent any
 
     options {
-        // Establece un límite de tiempo para evitar que el job se quede colgado
         timeout(time: 60, unit: 'MINUTES')
     }
 
@@ -11,75 +9,79 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    // La imagen de Docker es construida usando el Dockerfile que definiste.
-                    // Esto compila el código Java y crea la imagen 'selenium-java-tests'.
                     sh 'docker build -t selenium-java-tests .'
                 }
             }
         }
 
-       stage('Run Selenium Tests') {
-           steps {
-               script {
-                   // Clean up
-                   sh "docker rm -f ${CONTAINER_NAME} || true"
+        stage('Run Selenium Tests') {
+            steps {
+                script {
+                    // Define container name directly in the script block
+                    def containerName = "maven-runner-${BUILD_ID}"
 
-                   // Create target directory
-                   sh 'mkdir -p target/surefire-reports'
+                    sh "docker rm -f ${containerName} || true"
+                    sh 'mkdir -p target/surefire-reports'
 
-                   try {
-                       // Create and start container
-                       sh "docker run -d --name ${CONTAINER_NAME} -w /app selenium-java-tests tail -f /dev/null"
+                    sh """
+                        docker run --name ${containerName} \
+                            -v ${WORKSPACE}/target:/app/target \
+                            -w /app \
+                            selenium-java-tests \
+                            mvn clean test || echo "Tests completed with exit code: \$?"
+                    """
+                }
+            }
+        }
 
-                       // Copy current workspace to container
-                       sh "docker cp ${WORKSPACE}/. ${CONTAINER_NAME}:/app/"
+        stage('Debug Container') {
+            when {
+                anyOf {
+                    expression { currentBuild.result == null }
+                    expression { currentBuild.result == 'FAILURE' }
+                    expression { currentBuild.result == 'UNSTABLE' }
+                }
+            }
+            steps {
+                script {
+                    def containerName = "maven-runner-${BUILD_ID}"
 
-                       // Run tests with verbose output
-                       sh "docker exec ${CONTAINER_NAME} mvn clean test -X"
+                    echo "=== DEBUGGING: Checking container and report locations ==="
 
-                       // Wait a moment for files to be written
-                       sleep 5
+                    sh """
+                        echo "1. Checking if container is still running..."
+                        docker ps -a --filter "name=${containerName}" || true
 
-                       // Copy reports back - with multiple fallback options
-                       sh """
-                           # Try to copy reports
-                           docker cp ${CONTAINER_NAME}:/app/target/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
-                           echo "Primary reports directory not found, trying alternatives..."
+                        echo "\\n2. Checking workspace structure on HOST..."
+                        ls -la ${WORKSPACE}/ || true
+                        echo "\\nTarget directory:"
+                        ls -la ${WORKSPACE}/target/ || true
 
-                           # Try alternative locations
-                           docker cp ${CONTAINER_NAME}:/target/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
-                           docker cp ${CONTAINER_NAME}:/surefire-reports ${WORKSPACE}/target/ 2>/dev/null || \
-                           echo "Could not find test reports"
+                        echo "\\n3. Checking container filesystem (if container exists)..."
+                        if docker ps -a --format '{{.Names}}' | grep -q "${containerName}"; then
+                            echo "Container exists, checking contents..."
+                            docker exec ${containerName} ls -la /app/ || echo "Cannot exec in container"
+                            echo "\\nSearching for test reports in container:"
+                            docker exec ${containerName} find /app -type f -name "*.xml" 2>/dev/null || echo "No XML files found"
+                        else
+                            echo "Container ${containerName} does not exist or was removed"
+                        fi
 
-                           # List what was actually generated in container
-                           docker exec ${CONTAINER_NAME} find / -name "TEST-*.xml" 2>/dev/null | head -20
-                       """
-
-                   } catch (Exception e) {
-                       echo "Error during test execution: ${e.toString()}"
-
-                       // Try to get container logs for debugging
-                       sh "docker logs ${CONTAINER_NAME} || true"
-
-                       // Try to salvage any existing reports
-                       sh """
-                           docker cp ${CONTAINER_NAME}:/app ${WORKSPACE}/container-content/ 2>/dev/null || true
-                           find ${WORKSPACE} -name "*.xml" -type f | head -10
-                       """
-
-                       // Don't fail the stage yet, let the report publishing handle it
-                       currentBuild.result = 'UNSTABLE'
-                   }
-               }
-           }
-       }
+                        echo "\\n4. Checking for any generated XML files on HOST..."
+                        find ${WORKSPACE} -name "*.xml" -type f 2>/dev/null | head -20 || echo "No XML files found"
+                    """
+                }
+            }
+        }
 
         stage('Publish Reports') {
             steps {
                 script {
-                    // Lee los reportes de JUnit generados por Maven/Surefire dentro de la carpeta 'target'
-                    // y publica los resultados en la interfaz de Jenkins.
-                    // La ruta es relativa al workspace, donde el Bind Mount escribió el archivo.
+                    sh """
+                        echo "Looking for JUnit reports..."
+                        find ${WORKSPACE} -name "TEST-*.xml" -type f | head -5
+                    """
+
                     junit '**/target/surefire-reports/TEST-*.xml'
                 }
             }
@@ -88,9 +90,13 @@ pipeline {
 
     post {
         always {
-            // Limpia las capas de caché no utilizadas para ahorrar espacio en disco.
-            // Esto es crucial en entornos CI/CD para mantener el agente limpio.
-            sh 'docker system prune -f'
+            script {
+                def containerName = "maven-runner-${BUILD_ID}"
+                sh "docker rm -f ${containerName} || true"
+                sh 'docker system prune -f'
+                archiveArtifacts artifacts: 'target/surefire-reports/**/*', allowEmptyArchive: true
+                echo "Build Status: ${currentBuild.currentResult}"
+            }
         }
     }
 }

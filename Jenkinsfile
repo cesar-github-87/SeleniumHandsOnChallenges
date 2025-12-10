@@ -21,8 +21,17 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                  //// DIAGNÓSTICO: Muestra el contenido de /app. Si no ves pom.xml, la ruta de montaje es incorrecta.
-                    sh 'docker run --rm -w /app -v $PWD:/app selenium-java-tests ls -al /app'
+                 // 1. **Asegurar que el directorio de reportes exista en el HOST**
+                    sh 'mkdir -p target/surefire-reports'
+                    
+                    // 2. Ejecutar la prueba con permisos de ROOT y Bind Mounts corregidos.
+                    // El comando de ejecución es:
+                    sh 'docker run --rm -u root -w /app ' +
+                       // Bind Mounts
+                       '-v $PWD:/app ' + // Código
+                       '-v $PWD/m2-cache:/root/.m2 ' + // Cache M2
+                       '-v $PWD/target/surefire-reports:/app/target/surefire-reports ' + // Reportes
+                       'selenium-java-tests mvn clean test'
                 }
             }
         }

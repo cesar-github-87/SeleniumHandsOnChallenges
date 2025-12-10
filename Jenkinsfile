@@ -21,21 +21,23 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                  // 1. **Asegurar que el directorio de reportes exista en el HOST (Buena práctica)**
-                    sh 'mkdir -p target/surefire-reports'
+                    // 1. Asegurar que el directorio de reportes exista en el HOST
+                 sh 'mkdir -p target/surefire-reports'
                     
-                    // 2. Comando de Ejecución COMPLETO:
-                    //    -w /app: Fija el directorio de trabajo (donde está el pom.xml)
-                    //    -v $WORKSPACE:/app: Monta el código (ahora sabemos que funciona)
-                    //    -v $WORKSPACE/m2-cache:/root/.m2: Cache de Maven
-                    //    -v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports: Montaje bidireccional de reportes
-                    //    mvn clean test: Comando que ejecuta las pruebas.
+                    // 2. CREAMOS UN CONTENEDOR NUEVO (sin volúmenes externos conflictivos)
+                    sh 'docker create --name maven-runner -w /app selenium-java-tests tail -f /dev/null'
                     
-                    sh 'docker run --rm -u root -w /app ' +
-                       '-v $WORKSPACE:/app ' + 
-                       '-v $WORKSPACE/m2-cache:/root/.m2 ' +
-                       '-v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports ' +
-                       'selenium-java-tests mvn clean test'
+                    // 3. COPIAMOS el workspace de Jenkins AL contenedor
+                    sh 'docker cp $WORKSPACE/. maven-runner:/app'
+                    
+                    // 4. EJECUTAMOS MAVEN DENTRO del contenedor
+                    sh 'docker exec maven-runner mvn clean test'
+                    
+                    // 5. COPIAMOS los reportes DE VUELTA al workspace
+                    sh 'docker cp maven-runner:/app/target/surefire-reports $WORKSPACE/target/'
+                    
+                    // 6. DETENER y ELIMINAR el contenedor temporal
+                    sh 'docker rm -f maven-runner'
                 }
             }
         }

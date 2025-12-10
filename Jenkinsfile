@@ -21,20 +21,7 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                // El $PWD es una variable de shell, pero $WORKSPACE es la variable de Jenkins
-                    // que a veces funciona mejor en contextos complejos.
-                    // Vamos a simplificar los Bind Mounts a la ruta mínima y confiar en $WORKSPACE.
-                    
-                    sh 'docker run --rm -u root -w /app ' +
-                       // 1. Montaje de Código: Usamos $WORKSPACE, aunque $PWD debería funcionar.
-                       //    Nota: Estamos usando la sintaxis de shell ($WORKSPACE) para mapear el WORKSPACE
-                       //    actual a la carpeta /app del contenedor.
-                       '-v $WORKSPACE:/app ' +
-                       // 2. Montaje de la Cache M2: Creamos el cache de M2 en el WORKSPACE.
-                       '-v $WORKSPACE/m2-cache:/root/.m2 ' + 
-                       // 3. Montaje de Reportes:
-                       '-v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports ' +
-                       'selenium-java-tests mvn clean test'
+                   sh 'docker run --rm -w /app -v $WORKSPACE:/app selenium-java-tests ls -al /app'
                 }
             }
         }

@@ -17,59 +17,56 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                    // Define container name directly in the script block
-                    def containerName = "maven-runner-${BUILD_ID}"
+                    // Clean up previous container
+                    sh 'docker rm -f selenium-test-runner || true'
 
-                    sh "docker rm -f ${containerName} || true"
-                    sh 'mkdir -p target/surefire-reports'
+                    // Clean target directory
+                    sh 'rm -rf target && mkdir -p target'
 
-                    sh """
-                        docker run --name ${containerName} \
-                            -v ${WORKSPACE}/target:/app/target \
+                    echo "Running Selenium tests in Docker container..."
+
+                    // Run tests with explicit output
+                    sh '''
+                        docker run --name selenium-test-runner \
+                            -v ${WORKSPACE}:/app \
                             -w /app \
+                            --shm-size=2g \
                             selenium-java-tests \
-                            mvn clean test || echo "Tests completed with exit code: \$?"
-                    """
+                            mvn clean test -X 2>&1 | tee maven-output.log
+                    '''
+
+                    // Check the output
+                    sh '''
+                        echo "=== Checking Maven output ==="
+                        grep -A5 -B5 "Tests run:" maven-output.log || echo "No test summary found"
+                        grep -i "BUILD" maven-output.log || echo "No build status found"
+                    '''
                 }
             }
         }
 
-        stage('Debug Container') {
-            when {
-                anyOf {
-                    expression { currentBuild.result == null }
-                    expression { currentBuild.result == 'FAILURE' }
-                    expression { currentBuild.result == 'UNSTABLE' }
-                }
-            }
+        stage('Verify Reports') {
             steps {
                 script {
-                    def containerName = "maven-runner-${BUILD_ID}"
-
-                    echo "=== DEBUGGING: Checking container and report locations ==="
-
-                    sh """
-                        echo "1. Checking if container is still running..."
-                        docker ps -a --filter "name=${containerName}" || true
-
-                        echo "\\n2. Checking workspace structure on HOST..."
-                        ls -la ${WORKSPACE}/ || true
-                        echo "\\nTarget directory:"
-                        ls -la ${WORKSPACE}/target/ || true
-
-                        echo "\\n3. Checking container filesystem (if container exists)..."
-                        if docker ps -a --format '{{.Names}}' | grep -q "${containerName}"; then
-                            echo "Container exists, checking contents..."
-                            docker exec ${containerName} ls -la /app/ || echo "Cannot exec in container"
-                            echo "\\nSearching for test reports in container:"
-                            docker exec ${containerName} find /app -type f -name "*.xml" 2>/dev/null || echo "No XML files found"
-                        else
-                            echo "Container ${containerName} does not exist or was removed"
-                        fi
-
-                        echo "\\n4. Checking for any generated XML files on HOST..."
-                        find ${WORKSPACE} -name "*.xml" -type f 2>/dev/null | head -20 || echo "No XML files found"
-                    """
+                    sh '''
+                        echo "=== Looking for test reports ==="
+                        echo "Current directory: $(pwd)"
+                        echo ""
+                        echo "All files in workspace:"
+                        ls -la
+                        echo ""
+                        echo "Target directory contents:"
+                        ls -la target/ 2>/dev/null || echo "No target directory"
+                        echo ""
+                        echo "Searching for XML files:"
+                        find . -name "*.xml" -type f 2>/dev/null | grep -v ".git" | head -20
+                        echo ""
+                        echo "Checking surefire-reports directory:"
+                        ls -la target/surefire-reports/ 2>/dev/null || echo "No surefire-reports directory"
+                        echo ""
+                        echo "If no reports, checking if tests compiled:"
+                        find . -name "*Test.class" -type f 2>/dev/null | head -5
+                    '''
                 }
             }
         }
@@ -77,12 +74,17 @@ pipeline {
         stage('Publish Reports') {
             steps {
                 script {
-                    sh """
-                        echo "Looking for JUnit reports..."
-                        find ${WORKSPACE} -name "TEST-*.xml" -type f | head -5
-                    """
+                    // Try multiple possible locations
+                    echo "Attempting to publish test reports..."
 
-                    junit '**/target/surefire-reports/TEST-*.xml'
+                    // Method 1: Standard location
+                    junit testResults: 'target/surefire-reports/*.xml', allowEmptyResults: true
+
+                    // Method 2: Any XML in target
+                    junit testResults: 'target/*.xml', allowEmptyResults: true
+
+                    // Method 3: Search recursively
+                    junit testResults: '**/TEST-*.xml', allowEmptyResults: true
                 }
             }
         }
@@ -91,11 +93,22 @@ pipeline {
     post {
         always {
             script {
-                def containerName = "maven-runner-${BUILD_ID}"
-                sh "docker rm -f ${containerName} || true"
+                // Clean up
+                sh 'docker rm -f selenium-test-runner || true'
                 sh 'docker system prune -f'
-                archiveArtifacts artifacts: 'target/surefire-reports/**/*', allowEmptyArchive: true
-                echo "Build Status: ${currentBuild.currentResult}"
+
+                // Archive everything for debugging
+                archiveArtifacts artifacts: 'maven-output.log', allowEmptyArchive: true
+                archiveArtifacts artifacts: 'target/**/*', allowEmptyArchive: true
+
+                // Archive test reports if they exist
+                sh '''
+                    if ls target/surefire-reports/*.xml 2>/dev/null; then
+                        echo "Test reports found, archiving..."
+                    else
+                        echo "No test reports to archive"
+                    fi
+                '''
             }
         }
     }

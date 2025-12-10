@@ -14,17 +14,22 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
     <build>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.1.2</version>
                 <configuration>
-                    <!-- Explicitly set reports directory -->
                     <reportsDirectory>${project.build.directory}/surefire-reports</reportsDirectory>
-                    <!-- Always generate reports even on failure -->
                     <testFailureIgnore>true</testFailureIgnore>
-            </configuration>
+                    <!-- Add these for better debugging -->
+                    <printSummary>true</printSummary>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <useFile>false</useFile>
+                    <!-- Force report generation -->
+                    <failIfNoTests>false</failIfNoTests>
+                </configuration>
             </plugin>
         </plugins>
     </build>

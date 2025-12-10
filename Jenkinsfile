@@ -21,7 +21,21 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                   sh 'docker run --rm -w /app -v $WORKSPACE:/app selenium-java-tests ls -al /app'
+                  // 1. **Asegurar que el directorio de reportes exista en el HOST (Buena práctica)**
+                    sh 'mkdir -p target/surefire-reports'
+                    
+                    // 2. Comando de Ejecución COMPLETO:
+                    //    -w /app: Fija el directorio de trabajo (donde está el pom.xml)
+                    //    -v $WORKSPACE:/app: Monta el código (ahora sabemos que funciona)
+                    //    -v $WORKSPACE/m2-cache:/root/.m2: Cache de Maven
+                    //    -v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports: Montaje bidireccional de reportes
+                    //    mvn clean test: Comando que ejecuta las pruebas.
+                    
+                    sh 'docker run --rm -u root -w /app ' +
+                       '-v $WORKSPACE:/app ' + 
+                       '-v $WORKSPACE/m2-cache:/root/.m2 ' +
+                       '-v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports ' +
+                       'selenium-java-tests mvn clean test'
                 }
             }
         }

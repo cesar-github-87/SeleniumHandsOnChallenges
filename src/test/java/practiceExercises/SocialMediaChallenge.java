@@ -1,9 +1,11 @@
 package practiceExercises;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pageClasses.*;
@@ -14,6 +16,7 @@ import java.util.Map;
 
 
 public class SocialMediaChallenge {
+    ChromeOptions options;
     WebDriver driver;
     SocialMediaPage smp;
     WebDriverWait wait;
@@ -21,11 +24,21 @@ public class SocialMediaChallenge {
 
    @BeforeMethod
    void instantiate(){
-       driver = new ChromeDriver();
+       options = new ChromeOptions();
+       options.addArguments("--headless");
+       options.addArguments("--no-sandbox");
+       options.addArguments("--disable-dev-shm-usage");
+       options.addArguments("--window-size=1920,1080");
+       driver = new ChromeDriver(options);
 
        driver.manage().deleteAllCookies();
+
+
        driver.get("https://www.cnarios.com/challenges/social-media-feed#challenge");
-       driver.manage().window().maximize();
+       // 1. Limpia LocalStorage para eliminar el estado persistente de los "likes"
+       JavascriptExecutor js = (JavascriptExecutor) driver;
+       js.executeScript("window.localStorage.clear();"); // <-- ¡Esta línea es clave!
+       //driver.manage().window().maximize();
        driver.manage().timeouts().implicitlyWait(Duration.ofMillis(5000));
        smp = new SocialMediaPage(driver);
    }
@@ -66,7 +79,7 @@ public class SocialMediaChallenge {
            }
        }
 
-    driver.close();
+  //  driver.close();
 
     }
 
@@ -118,7 +131,7 @@ public class SocialMediaChallenge {
 
         //Verify Heart icon is no longer filled
         Assert.assertFalse(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getAttribute("class").contains("MuiSvgIcon-colorError"),"Heart appears to be filled");
-        driver.close();
+       // driver.close();
     }
 
     @Test
@@ -162,7 +175,7 @@ public class SocialMediaChallenge {
         System.out.println("Color of notification counter: " + smp.getNotificationCounter().getCssValue("background-color"));
         System.out.println("Notification Counter: "+ smp.getNotificationCounter().getText());
 
-        driver.quit();
+        //driver.quit();
     }
 
     @Test
@@ -206,7 +219,7 @@ public class SocialMediaChallenge {
         System.out.println(smp.getNotificationCounter().getText());
         Assert.assertEquals(Integer.parseInt(smp.getNotificationCounter().getText()),0, "Counter more than 0");
 
-        driver.close();
+        //driver.close(); //SOLO CIERRA LA VENTANA, NO CIERRA LA SESION
 
     }
 
@@ -247,8 +260,13 @@ public class SocialMediaChallenge {
         Assert.assertTrue(posts.get(1).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color")).contains("211, 47, 47"));
         Assert.assertFalse(posts.get(2).get("likeButton").findElement(By.cssSelector("svg")).getCssValue(("color")).contains("211, 47, 47"));
 
-        driver.close();
+        //driver.close(); SOLO CIERRA LA VENTANA, NO CIERRA LA SESION
 
+    }
+
+    @AfterMethod
+    public void tearDown(){
+        driver.quit();
     }
 
 }

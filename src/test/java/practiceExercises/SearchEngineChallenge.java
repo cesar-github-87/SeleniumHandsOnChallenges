@@ -1,14 +1,12 @@
 package practiceExercises;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 import org.testng.asserts.SoftAssert;
 import pageClasses.*;
 
@@ -19,13 +17,18 @@ import java.lang.Thread;
 import java.util.Map;
 
 public class SearchEngineChallenge {
+    ChromeOptions options;
     WebDriver driver;
     PageManager pm;
 
 
-    @BeforeTest
+    @BeforeMethod
     void instantiate(){
-        this.driver = new ChromeDriver();
+        options = new ChromeOptions();
+        options.addArguments("--headless");
+        options.addArguments("--no-sandbox");
+        options.addArguments("--disable-dev-shm-usage");
+        this.driver = new ChromeDriver(options);
         driver.get("https://www.cnarios.com/challenges");
         this.pm =  new PageManager(driver);
         pm.challengesPage().goToSearchEnginePage();
@@ -118,7 +121,7 @@ public class SearchEngineChallenge {
     }
 
 
-    @AfterClass
+    @AfterMethod
     void tearDown(){
         driver.quit();
     }

@@ -65,7 +65,7 @@ pipeline {
                     sh 'ls -la target/surefire-reports/ || echo "Directory not found"'
 
                     // 3. Publicación de Resultados
-                    junit 'target/surefire-reports/*.xml'
+                    junit '**/target/surefire-reports/*.xml'
 
                     // 4. LIMPIEZA FINAL (Asegurar que el contenedor temporal se elimine si Run Tests falló antes de la limpieza)
                     // Nota: Este paso debe estar en 'post' o en 'Run Tests', pero lo dejamos aquí para asegurar.

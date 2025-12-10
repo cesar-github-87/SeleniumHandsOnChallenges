@@ -62,6 +62,8 @@ pipeline {
                         echo "2. Running actual tests:"
                         docker run --rm \
                             --shm-size=2g \
+                            -v ${WORKSPACE}/target:/app/target \
+                            -v ${WORKSPACE}/test-output.log:/app/test-output.log \
                             selenium-java-tests \
                             bash -c "
                                 cd /app && \

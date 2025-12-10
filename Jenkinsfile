@@ -21,16 +21,19 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                 // 1. **Asegurar que el directorio de reportes exista en el HOST**
-                    sh 'mkdir -p target/surefire-reports'
+                // El $PWD es una variable de shell, pero $WORKSPACE es la variable de Jenkins
+                    // que a veces funciona mejor en contextos complejos.
+                    // Vamos a simplificar los Bind Mounts a la ruta mínima y confiar en $WORKSPACE.
                     
-                    // 2. Ejecutar la prueba con permisos de ROOT y Bind Mounts corregidos.
-                    // El comando de ejecución es:
                     sh 'docker run --rm -u root -w /app ' +
-                       // Bind Mounts
-                       '-v $PWD:/app ' + // Código
-                       '-v $PWD/m2-cache:/root/.m2 ' + // Cache M2
-                       '-v $PWD/target/surefire-reports:/app/target/surefire-reports ' + // Reportes
+                       // 1. Montaje de Código: Usamos $WORKSPACE, aunque $PWD debería funcionar.
+                       //    Nota: Estamos usando la sintaxis de shell ($WORKSPACE) para mapear el WORKSPACE
+                       //    actual a la carpeta /app del contenedor.
+                       '-v $WORKSPACE:/app ' +
+                       // 2. Montaje de la Cache M2: Creamos el cache de M2 en el WORKSPACE.
+                       '-v $WORKSPACE/m2-cache:/root/.m2 ' + 
+                       // 3. Montaje de Reportes:
+                       '-v $WORKSPACE/target/surefire-reports:/app/target/surefire-reports ' +
                        'selenium-java-tests mvn clean test'
                 }
             }

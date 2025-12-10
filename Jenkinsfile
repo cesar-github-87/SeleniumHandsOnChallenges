@@ -25,23 +25,32 @@ pipeline {
             }
         }
         stage('Run Tests') {
-            steps {
-                script {
-                    // Asegura que el directorio de reportes exista en el HOST
-                    sh 'mkdir -p target/surefire-reports'
+             steps {
+                 script {
+                     // LIMPIEZA PREVENTIVA: Asegura que podemos crear el contenedor con el nombre
+                     sh 'docker rm -f maven-runner || true'
+                     sh 'mkdir -p target/surefire-reports'
 
-                    sh '''
-                        echo "=== Running Tests ==="
-                    ''' +
-                    // Comando docker run EN UNA SOLA CADENA LARGA (más seguro)
-                    'docker run --rm --shm-size=2g -u root -w /app ' +
-                    '-v ${WORKSPACE}:/app ' +
-                    '-v ${WORKSPACE}/m2-cache:/root/.m2 ' +
-                    '-v ${WORKSPACE}/target/surefire-reports:/app/target/surefire-reports ' +
-                    'selenium-java-tests ' + // El nombre de la imagen debe ir aquí
-                    'mvn clean test'
-                }
-            }
+                     // 1. CREAR EL CONTENEDOR (en estado Created)
+                     sh 'docker create --name maven-runner -w /app selenium-java-tests tail -f /dev/null'
+
+                     // 2. COPIAR el workspace (código, pom.xml, src/) al contenedor. ESTO RESUELVE EL ERROR POM.
+                     sh 'docker cp $WORKSPACE/. maven-runner:/app'
+
+                     // 3. INICIAR EL CONTENEDOR
+                     sh 'docker start maven-runner'
+
+                     // 4. EJECUTAR MAVEN DENTRO del contenedor
+                     // Usamos 'sh -c' para que el shell interno del contenedor ejecute el comando completo
+                     sh 'docker exec maven-runner sh -c "mvn clean test"'
+
+                     // 5. COPIAR los reportes DE VUELTA al workspace
+                     sh 'docker cp maven-runner:/app/target/surefire-reports $WORKSPACE/target/'
+
+                     // 6. LIMPIAR (Eliminar el contenedor)
+                     sh 'docker rm -f maven-runner'
+                 }
+             }
         }
 
         // REMOVED 'Get Results' STAGE - It is no longer needed because of the volume mount

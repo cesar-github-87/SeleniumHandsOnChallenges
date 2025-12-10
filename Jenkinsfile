@@ -21,15 +21,8 @@ pipeline {
         stage('Run Selenium Tests') {
             steps {
                 script {
-                  // Nota: Asegúrate de que tu Dockerfile tenga 'USER root' al final o no lo cambie
-                    sh 'docker run --rm -w /app ' +
-                       // 1. Montaje de Código: $PWD es el workspace local del agente
-                       '-v $PWD:/app ' +
-                       // 2. Montaje de la Cache M2: Usa $PWD para la cache en el host
-                       '-v $PWD/m2-cache:/root/.m2 ' +
-                       // 3. Montaje de Reportes:
-                       '-v $PWD/target/surefire-reports:/app/target/surefire-reports ' +
-                       'selenium-java-tests mvn clean test'
+                  //// DIAGNÓSTICO: Muestra el contenido de /app. Si no ves pom.xml, la ruta de montaje es incorrecta.
+                    sh 'docker run --rm -w /app -v $PWD:/app selenium-java-tests ls -al /app'
                 }
             }
         }

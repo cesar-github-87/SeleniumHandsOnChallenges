@@ -32,27 +32,14 @@ pipeline {
 
                     sh '''
                         echo "=== Running Tests ==="
-
-                        docker run --rm \
-                            --shm-size=2g \
-                            -u root \
-                            -w /app \
-
-                            # 1. MONTAJE COMPLETO DEL CÓDIGO Y POM.XML
-                            -v ${WORKSPACE}:/app \
-
-                            # 2. MONTAJE DEL CACHÉ DE MAVEN
-                            -v ${WORKSPACE}/m2-cache:/root/.m2 \
-
-                            # 3. MONTAJE ESPECÍFICO DEL DIRECTORIO DE REPORTES
-                            # Esto asegura que Surefire escriba los reportes al Host.
-                            -v ${WORKSPACE}/target/surefire-reports:/app/target/surefire-reports \
-
-                            selenium-java-tests \
-
-                            # Ejecuta Maven de forma limpia y ejecuta las pruebas
-                            mvn clean test
-                    '''
+                    ''' +
+                    // Comando docker run EN UNA SOLA CADENA LARGA (más seguro)
+                    'docker run --rm --shm-size=2g -u root -w /app ' +
+                    '-v ${WORKSPACE}:/app ' +
+                    '-v ${WORKSPACE}/m2-cache:/root/.m2 ' +
+                    '-v ${WORKSPACE}/target/surefire-reports:/app/target/surefire-reports ' +
+                    'selenium-java-tests ' + // El nombre de la imagen debe ir aquí
+                    'mvn clean test'
                 }
             }
         }

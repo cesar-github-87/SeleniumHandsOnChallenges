@@ -96,21 +96,28 @@ public class SearchEngineChallengeTest {
         Observe stale element exception
         Recover by re-locating the search input and enter 'Hotels in Paris'*/
 
-        WebElement field = driver.findElement(By.xpath("//input"));
-        field.sendKeys("Flight to London");
+
+        By fieldLocator = By.xpath("//input");
+        driver.findElement(fieldLocator).sendKeys("Flight to London");
         this.pm.searchEnginePage().clickSearchbutton();
-
-
 
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
 
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]")));
-        wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//input")));
-        field = driver.findElement(By.xpath("//input"));
-        field.sendKeys(Keys.CONTROL + "a");
-        field.sendKeys(Keys.DELETE);
-        field.sendKeys("Flight to Paris");
+
+        // --- SEGUNDA INTERACCIÓN (Recuperación y uso secuencial) ---
+
+        // 5. Re-localizar el elemento para obtener la referencia fresca (fieldFresh)
+        // Usamos wait.until para asegurar que el nuevo input está disponible para la interacción
+        WebElement fieldFresh = wait.until(ExpectedConditions.presenceOfElementLocated(fieldLocator));
+
+
+        // 6. Realizar acciones secuenciales sobre la referencia fresca (fieldFresh)
+        //    (Seguro, ya que no hay re-render intermedio)
+        fieldFresh.sendKeys(Keys.CONTROL + "a");
+        fieldFresh.sendKeys(Keys.DELETE);
+        fieldFresh.sendKeys("Flight to Paris");
     }
 
     @Test

@@ -13,7 +13,7 @@ import java.time.Duration;
 public class SearchEnginePage {
     WebDriver driver;
 
-    private By searchBox = By.xpath("//input");
+    private By searchBoxLocator = By.xpath("//input");
     @FindBy (xpath="//div[contains(@class, 'flex-1')]//button") WebElement searchButton;
 
     //constructor
@@ -30,11 +30,11 @@ public class SearchEnginePage {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         // CORRECCIÓN: Usar ExpectedConditions para encontrar el elemento en tiempo real
-        WebElement element = wait.until(ExpectedConditions.elementToBeClickable(searchBox));
+        WebElement searchBox= wait.until(ExpectedConditions.elementToBeClickable(searchBoxLocator));
 
         // Limpiar y luego escribir
-        element.clear();
-        element.sendKeys(searchText);
+        searchBox.clear();
+        searchBox.sendKeys(searchText);
     }
 
     public void clickSearchbutton(){

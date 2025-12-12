@@ -37,7 +37,7 @@ public class SearchEngineChallengeTest {
 
     }
 
-    @Test
+    @Test(priority=1)
     void SSE_001_Perform_Valid_Search(){
         /*
         *   Locate the search input and type 'React Testing'
@@ -71,7 +71,7 @@ public class SearchEngineChallengeTest {
 
     }
 
-    @Test
+    @Test(priority=3)
     void SSE_002_Attempt_search_with_empty_input(){
         /*
             * Ensure the search input is empty
@@ -93,7 +93,7 @@ public class SearchEngineChallengeTest {
 
     }
 
-    @Test(groups="recoveryStale")
+    @Test(priority =2, groups="recoveryStale")
     void SSE_003_ReUse_old_search_after_reRender() throws InterruptedException {
         /*Locate the search input and enter 'Flights to London'
         Click the search button

@@ -113,6 +113,8 @@ public class SocialMediaChallengeTest {
 
         //verify whether the third post is liked or not
         WebElement thirdPost = driver.findElement(By.xpath("(//div[contains(@class, 'flex')]//div[contains(@class, 'MuiPaper-root')]//button)[3]"));
+
+
         String isLiked = thirdPost.findElement(By.cssSelector("svg")).getAttribute("class");
         Assert.assertTrue(isLiked.contains("MuiSvgIcon-colorError"));
 

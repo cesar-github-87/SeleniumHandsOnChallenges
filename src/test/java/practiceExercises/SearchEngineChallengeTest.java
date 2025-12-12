@@ -9,6 +9,7 @@ import org.testng.annotations.*;
 import org.testng.asserts.SoftAssert;
 import pageClasses.*;
 
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.List;
 
@@ -87,7 +88,7 @@ public class SearchEngineChallengeTest {
 
     }
 
-    @Test
+    @Test(groups="recoveryStale")
     void SSE_003_ReUse_old_search_after_reRender() throws InterruptedException {
         /*Locate the search input and enter 'Flights to London'
         Click the search button
@@ -103,31 +104,57 @@ public class SearchEngineChallengeTest {
 
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
-
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]")));
 
         // --- SEGUNDA INTERACCIÓN (Recuperación y uso secuencial) ---
 
         // 5. Re-localizar el elemento para obtener la referencia fresca (fieldFresh)
         // Usamos wait.until para asegurar que el nuevo input está disponible para la interacción
-        WebElement fieldFresh = wait.until(ExpectedConditions.presenceOfElementLocated(fieldLocator));
+
+
+        WebElement fieldFresh = wait.until(ExpectedConditions.elementToBeClickable(fieldLocator));
+
 
 
         // 6. Realizar acciones secuenciales sobre la referencia fresca (fieldFresh)
         //    (Seguro, ya que no hay re-render intermedio)
-        fieldFresh.sendKeys(Keys.CONTROL + "a");
-        fieldFresh.sendKeys(Keys.DELETE);
+        fieldFresh.clear();
+        fieldFresh = driver.findElement(fieldLocator);
+        /*fieldFresh.sendKeys(Keys.CONTROL + "a");
+        fieldFresh.sendKeys(Keys.DELETE);*/
         fieldFresh.sendKeys("Flight to Paris");
     }
 
-    @Test
+    @Test(dependsOnMethods = {"SSE_003_ReUse_old_search_after_reRender"}, groups="recoveryStale")
     void SSE_004_Second_Valid_Search(){
+       /* Description:
+        After recovering from a stale element, confirm automation still works for a new query.
+                Steps to Execute:
+        Re-locate the search input
+        Enter 'Node.js tutorials'
+        Click the search button
+        Verify that new results render correctly*/
+
+        System.out.println("INSIDE");
+        By fieldLocator = By.xpath("//input");
+        WebElement fieldFresh = driver.findElement(fieldLocator);
+        fieldFresh.sendKeys("Node.js tutorials");
+        this.pm.searchEnginePage().clickSearchbutton();
+
+
 
     }
 
 
     @AfterMethod
-    void tearDown(){
+    void tearDown(Method method){
+        if (method.getName().equals("SSE_003_ReUse_old_search_after_reRender")) {
+            System.out.println("-> Sesión de Selenium Mantenida Abierta para el próximo Test.");
+            return; // Salta el driver.quit() para SSE_003
+        }
+
+        // Para SSE_001, SSE_002, SSE_004 y cualquier otra prueba:
+        System.out.println("-> Cerrando el navegador después de: " + method.getName());
         driver.quit();
     }
 

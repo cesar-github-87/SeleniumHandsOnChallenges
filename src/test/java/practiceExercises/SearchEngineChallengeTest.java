@@ -20,9 +20,14 @@ public class SearchEngineChallengeTest {
 
 
     @BeforeMethod
-    void instantiate(){
+    void instantiate(Method method){
+        if (method.getName().equals("SSE_004_Second_Valid_Search")) {
+            System.out.println("-> NO ABRIR SESION NUEVA.");
+            return; // Salta el driver.quit() para SSE_003
+        }
+
         options = new ChromeOptions();
-        options.addArguments("--headless");
+        //options.addArguments("--headless");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         this.driver = new ChromeDriver(options);
@@ -118,11 +123,12 @@ public class SearchEngineChallengeTest {
 
         // 6. Realizar acciones secuenciales sobre la referencia fresca (fieldFresh)
         //    (Seguro, ya que no hay re-render intermedio)
-        fieldFresh.clear();
+        fieldFresh.sendKeys(Keys.CONTROL + "a");
+        fieldFresh.sendKeys(Keys.DELETE);
         fieldFresh = driver.findElement(fieldLocator);
-        /*fieldFresh.sendKeys(Keys.CONTROL + "a");
-        fieldFresh.sendKeys(Keys.DELETE);*/
         fieldFresh.sendKeys("Flight to Paris");
+
+
     }
 
     @Test(dependsOnMethods = {"SSE_003_ReUse_old_search_after_reRender"}, groups="recoveryStale")
@@ -137,7 +143,9 @@ public class SearchEngineChallengeTest {
 
         System.out.println("INSIDE");
         By fieldLocator = By.xpath("//input");
-        WebElement fieldFresh = driver.findElement(fieldLocator);
+        WebElement fieldFresh = driver.findElement(fieldLocator); //RE-LOCATE
+        fieldFresh.sendKeys(Keys.CONTROL + "a");
+        //fieldFresh.sendKeys(Keys.DELETE);
         fieldFresh.sendKeys("Node.js tutorials");
         this.pm.searchEnginePage().clickSearchbutton();
 

@@ -19,9 +19,14 @@ public class ChallengesPage {
 
     //Locators
     @FindBy(xpath="//div[contains(@class, 'MuiCard-root')][contains(.,'Search Engine')] //button") WebElement searchEngine;
+    @FindBy(xpath="//div[contains(@class, 'MuiCard-root')][contains(.,'Job Application')] //button") WebElement jobPage;
 
     public void goToSearchEnginePage(){
         this.searchEngine.click();
+    }
+
+    public void goToJobPage(){
+        this.jobPage.click();
     }
 
 

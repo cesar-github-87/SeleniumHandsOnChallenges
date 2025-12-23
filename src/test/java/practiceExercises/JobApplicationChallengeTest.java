@@ -48,7 +48,7 @@ public class JobApplicationChallengeTest {
 
     @Test
     public void JAF_001_subnit_Form_with_Valid_Data(){
-        System.out.println("INSIDE");
+        System.out.println("INSIDE");  //kldsafjlaksdfjñlasdkjf
         /*
         Enter valid salutation, first name, last name, email, and mobile
         Select gender and languages

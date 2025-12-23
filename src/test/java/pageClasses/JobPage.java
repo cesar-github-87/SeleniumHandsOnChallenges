@@ -81,20 +81,21 @@ public class JobPage {
 
     public void selectRating(Integer rate){
         // Localizamos el input que React controla
-        WebElement sliderInput = driver.findElement(By.cssSelector("input[name='rating']"));
 
-        // El "truco" para que React acepte el cambio de estado inmediatamente
-        String jsScript =
-                "var input = arguments[0];" +
-                        "var value = arguments[1];" +
-                        "var setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;" +
-                        "setter.call(input, value);" +
-                        "input.dispatchEvent(new Event('input', { bubbles: true }));" +
-                        "input.dispatchEvent(new Event('change', { bubbles: true }));";
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
-        ((JavascriptExecutor) driver).executeScript(jsScript, sliderInput, rate);
 
-        System.out.println("Java: Slider actualizado a " + rate + " mediante JS Inject.");
+        By thumbLocator = By.xpath("//span[contains(@class,'MuiSlider-thumb')]");
+        WebElement thumb = driver.findElement(thumbLocator);
+        wait.until(ExpectedConditions.elementToBeClickable(thumb));
+
+        Actions actions = new Actions(driver);
+
+        WebElement slider = driver.findElement(By.xpath("//span[contains(@class,'MuiSlider-rail')]"));
+        int width = slider.getSize().width;
+        System.out.println("Width "+ width);
+        thumb.click();
+        actions.dragAndDropBy(thumb,(width/10*rate),0).build().perform();
 
 
     }
@@ -114,5 +115,16 @@ public class JobPage {
         wait.until(ExpectedConditions.presenceOfElementLocated(timeLocator));
         driver.findElement(timeLocator).sendKeys(time);
     }
+
+
+    public void selectdRating(Integer rate){
+
+
+
+
+
+
+    }
+
 }
 

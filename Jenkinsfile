@@ -53,6 +53,14 @@ pipeline {
              }
         }
 
+        post {
+                always {
+                    // Esto extrae los reportes del contenedor al espacio de trabajo de Jenkins
+                    junit 'target/surefire-reports/*.xml'
+                    archiveArtifacts artifacts: 'target/surefire-reports/**', allowEmptyArchive: true
+                }
+            }
+
         // REMOVED 'Get Results' STAGE - It is no longer needed because of the volume mount
         stage('Publish Results') {
             steps {

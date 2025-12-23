@@ -15,6 +15,7 @@ import pageClasses.JobPage;
 import pageClasses.PageManager;
 
 import java.lang.reflect.Method;
+import java.nio.file.Paths;
 import java.time.Duration;
 //import pageClasses.SocialMediaPage;
 
@@ -34,7 +35,7 @@ public class JobApplicationChallengeTest {
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
-        driver = new ChromeDriver(options);
+        driver = new ChromeDriver();
         driver.manage().deleteAllCookies();
 
         driver.get("https://www.cnarios.com/challenges");
@@ -66,7 +67,7 @@ public class JobApplicationChallengeTest {
 
         String projectPath = System.getProperty("user.dir");
         System.out.println(projectPath);
-        String filePath = projectPath + "/src/test/resources/Cesar Barragan Resume 2025-11.pdf";
+        String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Cesar_Barragan_Resume_2025-11.pdf").toAbsolutePath().toString();
         System.out.println(filePath);
 
         By fileLocator = By.xpath("//input[@type='file']");
@@ -91,7 +92,7 @@ public class JobApplicationChallengeTest {
         wait.until(ExpectedConditions.presenceOfElementLocated(messageLocator));
 
         WebElement message = driver.findElement(messageLocator);
-        System.out.println(message.getText());
+        System.out.println("TEST "+message.getText());
 
         Assert.assertEquals(message.getText(),"Application Submitted Successfully!");
 
@@ -99,12 +100,12 @@ public class JobApplicationChallengeTest {
 
     }
 
-    @AfterMethod
+  /*  @AfterMethod
     void tearDown(Method method){
 
 
         driver.quit();
-    }
+    }*/
 
 
 

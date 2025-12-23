@@ -35,7 +35,7 @@ public class JobApplicationChallengeTest {
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
-        driver = new ChromeDriver();
+        driver = new ChromeDriver(options);
         driver.manage().deleteAllCookies();
 
         driver.get("https://www.cnarios.com/challenges");

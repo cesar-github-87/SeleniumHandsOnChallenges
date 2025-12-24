@@ -134,7 +134,7 @@ public class JobApplicationChallengeTest {
 
     }
 
-/*
+
     @AfterMethod
     public void tearDown(Method method) {
 
@@ -142,7 +142,6 @@ public class JobApplicationChallengeTest {
         driver.quit();
     }
 
-*/
 
 }
 

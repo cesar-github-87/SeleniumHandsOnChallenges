@@ -125,6 +125,7 @@ public class SearchEngineChallengeTest {
         //    (Seguro, ya que no hay re-render intermedio)
         fieldFresh.sendKeys(Keys.CONTROL + "a");
         fieldFresh.sendKeys(Keys.DELETE);
+        wait.until(ExpectedConditions.elementToBeClickable(fieldLocator));
         fieldFresh = driver.findElement(fieldLocator);
         fieldFresh.sendKeys("Flight to Paris");
 

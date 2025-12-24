@@ -6,6 +6,7 @@ import org.openqa.selenium.WebElement;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -31,7 +32,7 @@ public class JobApplicationChallengeTest {
     @BeforeMethod
     public void instantiate(){
         options = new ChromeOptions();
-        options.addArguments("--headless");
+       // options.addArguments("--headless");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -100,13 +101,52 @@ public class JobApplicationChallengeTest {
 
     }
 
-  /*  @AfterMethod
-    void tearDown(Method method){
+
+    @Test
+    public void JAF_002_Attempt_invalid_eMail(){
+
+        /*
+        Enter an invalid email and try to submit the form.
+        Steps to Execute:
+            Enter invalid email 'abc@xyz'
+            Fill remaining required fields
+            Try submitting the form
+            Verify email error helper text is shown
+        */
+
+        jp = new JobPage(driver);
+        jp.fillPersonaData("Mr.", "Cessar", "Barragan", "abc@xyz", "3167898888", "Male", "English");
+
+        Wait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//p[contains(@id,\"-helper-text\")]")));
+        WebElement helper = driver.findElement(By.xpath("//p[contains(@id,\"-helper-text\")]"));
+        System.out.println(helper.getText());
+
+        jp.addSkills(new String[]{"skill_1", "skill_2", "skill_3"});
+        jp.getRoles();
+        jp.enterDate("05-30-2026");
+        jp.enterTime("1125p");
+
+        WebElement accept =  driver.findElement(By.xpath("//input[@name='termsAccepted']"));
+        accept.click();
+
+        Assert.assertEquals(helper.getText(),"Enter a valid email");
+
+    }
+
+/*
+    @AfterMethod
+    public void tearDown(Method method) {
 
 
         driver.quit();
-    }*/
+    }
 
-
+*/
 
 }
+
+
+
+
+

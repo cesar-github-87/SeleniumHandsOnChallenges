@@ -118,10 +118,15 @@ public class SearchEngineChallengeTest {
 
 
         wait.ignoring(StaleElementReferenceException.class).until(d -> {
-            WebElement input = d.findElement(fieldLocator);
-            input.sendKeys(Keys.CONTROL + "a");
-            input.sendKeys(Keys.DELETE);
-            input.sendKeys("Flight to Paris");
+            // 1. Buscamos y seleccionamos todo
+            d.findElement(fieldLocator).sendKeys(Keys.CONTROL + "a");
+
+            // 2. Buscamos de nuevo (por si React re-renderizó tras la selección) y borramos
+            d.findElement(fieldLocator).sendKeys(Keys.DELETE);
+
+            // 3. Buscamos una última vez y escribimos
+            d.findElement(fieldLocator).sendKeys("Flight to Paris");
+
             return true;
         });
 

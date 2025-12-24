@@ -108,7 +108,7 @@ public class SearchEngineChallengeTest {
         this.pm.searchEnginePage().clickSearchbutton();
 
 
-        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(5));
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.until(ExpectedConditions.presenceOfElementLocated(By.xpath("//div[contains(@class, \"w-full\")]//div[contains(@class, \"MuiCard-root\")]")));
 
         // --- SEGUNDA INTERACCIÓN (Recuperación y uso secuencial) ---
@@ -117,17 +117,13 @@ public class SearchEngineChallengeTest {
         // Usamos wait.until para asegurar que el nuevo input está disponible para la interacción
 
 
-        WebElement fieldFresh = wait.until(ExpectedConditions.elementToBeClickable(fieldLocator));
-
-
-
-        // 6. Realizar acciones secuenciales sobre la referencia fresca (fieldFresh)
-        //    (Seguro, ya que no hay re-render intermedio)
-        fieldFresh.sendKeys(Keys.CONTROL + "a");
-        fieldFresh.sendKeys(Keys.DELETE);
-        wait.until(ExpectedConditions.elementToBeClickable(fieldLocator));
-        fieldFresh = driver.findElement(fieldLocator);
-        fieldFresh.sendKeys("Flight to Paris");
+        wait.ignoring(StaleElementReferenceException.class).until(d -> {
+            WebElement input = d.findElement(fieldLocator);
+            input.sendKeys(Keys.CONTROL + "a");
+            input.sendKeys(Keys.DELETE);
+            input.sendKeys("Flight to Paris");
+            return true;
+        });
 
 
     }

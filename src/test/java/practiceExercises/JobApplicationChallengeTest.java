@@ -43,6 +43,7 @@ public class JobApplicationChallengeTest {
         pm = new PageManager(driver);
 
         pm.challengesPage().goToJobPage();
+        driver.manage().window().maximize();
 
     }
 
@@ -134,10 +135,35 @@ public class JobApplicationChallengeTest {
 
     }
 
+    @Test
+    public void JAF_003_Upload_Invalid_Resume(){
+        /*
+        Select a .jpg file from system upload
+        Verify snackbar shows error message
+        * */
+        jp = new JobPage(driver);
+
+        String projectPath = System.getProperty("user.dir");
+        System.out.println(projectPath);
+        String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Lucy.jpg").toAbsolutePath().toString();
+        System.out.println(filePath);
+        Wait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+
+        By fileLocator = By.xpath("//input[@type='file']");
+        wait.until(ExpectedConditions.presenceOfElementLocated(fileLocator));
+        driver.findElement(fileLocator).sendKeys(filePath);
+
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//div[contains(@class,'MuiAlert-standardError')]")));
+        WebElement errorMui= driver.findElement(By.xpath("//div[contains(@class,'MuiAlert-standardError')]"));
+        System.out.println(errorMui.getText());
+       // Assert.assertEquals(errorMui.getText(),"Only .pdf or .docx allowed");
+
+    }
+
 
     @AfterMethod
     public void tearDown(Method method) {
-
 
         driver.quit();
     }

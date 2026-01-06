@@ -32,7 +32,7 @@ public class JobApplicationChallengeTest {
     @BeforeMethod
     public void instantiate(){
         options = new ChromeOptions();
-        options.addArguments("--headless");
+       // options.addArguments("--headless");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -157,16 +157,81 @@ public class JobApplicationChallengeTest {
         wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(By.xpath("//div[contains(@class,'MuiAlert-standardError')]")));
         WebElement errorMui= driver.findElement(By.xpath("//div[contains(@class,'MuiAlert-standardError')]"));
         System.out.println(errorMui.getText());
-       // Assert.assertEquals(errorMui.getText(),"Only .pdf or .docx allowed");
+        Assert.assertEquals(errorMui.getText(),"Only .pdf or .docx allowed");
 
     }
 
 
+    @Test
+    public void JAF_004_Add_and_delete_skill_chips(){
+        /*
+        *   Type 'React' in skills input and press Enter
+            Verify 'React' chip appears
+            Delete 'React' chip
+            Verify chip is removed
+        *  */
+
+        jp = new JobPage(driver);
+        jp.addSkills(new String[]{"React", "Otra Cosa"});
+        By skillChip =  By.xpath("//div[contains(@class,'MuiChip-root')]//span[text()='React']");
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        wait.until(ExpectedConditions.presenceOfElementLocated(skillChip));
+        WebElement chip = driver.findElement(skillChip);
+
+        WebElement deleteChip = driver.findElement(By.xpath("//div[contains(@class,\"MuiChip-root\")]//span[text()='React']/following-sibling::*[local-name()='svg']"));
+        deleteChip.click();
+
+
+        Boolean isGone = wait.until(ExpectedConditions.invisibilityOfElementLocated(skillChip));
+
+        // 4. Aserción
+        Assert.assertTrue(isGone, "El chip de React debería haber desaparecido");
+       // System.out.println("TEST "+ chip.getText());
+
+    }
+
+    @Test
+    public void JAF_005_Preview_form_data(){
+        /**
+         *Fill in some fields in the form
+         * Click Preview button
+         * Verify JSON preview matches entered data
+         */
+        jp = new JobPage(driver);
+        jp.fillPersonaData("MR","Cesar","Barragan","cesar.bh87@gmail.com","1234567890","Male","English");
+        String projectPath = System.getProperty("user.dir");
+        System.out.println(projectPath);
+        String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Cesar_Barragan_Resume_2025-11.pdf").toAbsolutePath().toString();
+        System.out.println(filePath);
+
+        By fileLocator = By.xpath("//input[@type='file']");
+        driver.findElement(fileLocator).sendKeys(filePath);
+
+        jp.addSkills(new String[]{"hello", "this is", "an array"});
+
+        jp.getRoles();
+        jp.selectRating(8);
+        jp.enterDate("05-30-2026");
+        jp.enterTime("1125p");
+
+        WebElement accept =  driver.findElement(By.xpath("//input[@name='termsAccepted']"));
+        accept.click();
+        driver.findElement(By.xpath("//button[text()='Preview']")).click();
+        jp.getPreviewData();
+
+
+    }
+
+
+/*
     @AfterMethod
     public void tearDown(Method method) {
 
         driver.quit();
-    }
+    }*/
+
+
 
 
 }

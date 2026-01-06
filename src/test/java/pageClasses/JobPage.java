@@ -6,7 +6,10 @@ import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JobPage {
     WebDriver driver;
@@ -51,7 +54,11 @@ public class JobPage {
     }
 
     public void addSkills(String[] skills) {
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
         By skillLocattor = By.xpath("//span[contains(., 'Add a Skill')]/ancestor::div[contains(@class, 'MuiInputBase-root')]//input");
+        wait.until(ExpectedConditions.presenceOfAllElementsLocatedBy(skillLocattor));
+
         for(String skill : skills ){
             WebElement element = driver.findElement(skillLocattor);
             element.sendKeys(skill);
@@ -114,6 +121,69 @@ public class JobPage {
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
         wait.until(ExpectedConditions.presenceOfElementLocated(timeLocator));
         driver.findElement(timeLocator).sendKeys(time);
+    }
+
+    public Map<String, String> getPreviewData() {
+        Map<String, String> data = new HashMap<>();
+
+        // 1. Extraer pares simples (Name, Email, Gender, etc.)
+        // Buscamos los párrafos que contienen etiquetas <strong>
+        List<WebElement> rows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
+        List<WebElement> rows2 =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//div[contains(@class, 'MuiBox-root')]"));
+
+        for (WebElement row : rows) {
+            // El texto viene como "Name: cesar c". Lo separamos.
+            String fullText = row.getText();
+            if (fullText.contains(":")) {
+                String[] parts = fullText.split(":", 2);
+                String key = parts[0].trim();
+                String value = parts[1].trim();
+                data.put(key, value);
+                System.out.println( key+": "+value);
+            } else {
+                if(row.getText().contains(" / 10")){
+                    String key = "Rating";
+                    String value = row.getText().split(" / 10")[0].trim();
+                    data.put(key, value);
+                    System.out.println( key+": "+value);
+                }if(row.getText().contains("Accepted")){
+                    String key = "Terms";
+                    String value = row.getText().trim();
+                    data.put(key, value);
+                    System.out.println( key+": "+value);
+                }
+
+
+            }
+        }
+
+      /*  for(WebElement row : rows2){
+            String fullText = row.getText();
+            System.out.println("other strings: " + fullText);
+        }*/
+
+        // 2. Extraer Listas (Skills, Job Roles)
+        // Esto requiere lógica específica porque los Chips no tienen un "Label" pegado igual que los textos
+        data.put("Skills", getChipsText("Skills"));
+        data.put("Job Roles", getChipsText("Job Roles"));
+
+        return data;
+    }
+
+    //Método auxiliar para obtener texto de los Chips basado en el título de la sección
+    private String getChipsText(String sectionTitle) {
+        // XPath avanzado: Busca el título h6, luego el siguiente div hermano, y dentro los chips
+        String xpath = String.format("//h6[text()='%s']/following-sibling::div[1]//span[contains(@class, 'MuiChip-label')]", sectionTitle);
+
+        List<WebElement> chips = driver.findElements(By.xpath(xpath));
+        List<String> chipTexts = new ArrayList<>();
+
+        for (WebElement chip : chips) {
+            chipTexts.add(chip.getText());
+        }
+
+        // Retornamos como string unido por comas para facilitar la comparación, o devuelve una List si prefieres
+        return String.join(", ", chipTexts);
     }
 
 

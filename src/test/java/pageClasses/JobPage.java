@@ -130,7 +130,7 @@ public class JobPage {
 
         List<WebElement> singleRows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
         List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
-       // WebElement terms = ;
+
 
         for (WebElement row : singleRows) {
             // El texto viene como "Name: cesar c". Lo separamos.

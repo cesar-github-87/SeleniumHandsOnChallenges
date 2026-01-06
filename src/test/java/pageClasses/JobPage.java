@@ -124,14 +124,16 @@ public class JobPage {
     }
 
     public Map<String, String> getPreviewData() {
+
         Map<String, String> data = new HashMap<>();
 
         // 1. Extraer pares simples (Name, Email, Gender, etc.)
         // Buscamos los párrafos que contienen etiquetas <strong>
-        List<WebElement> rows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
-        List<WebElement> rows2 =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//div[contains(@class, 'MuiBox-root')]"));
+        List<WebElement> singleRows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
+        List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
+       // WebElement terms = ;
 
-        for (WebElement row : rows) {
+        for (WebElement row : singleRows) {
             // El texto viene como "Name: cesar c". Lo separamos.
             String fullText = row.getText();
             if (fullText.contains(":")) {
@@ -140,29 +142,17 @@ public class JobPage {
                 String value = parts[1].trim();
                 data.put(key, value);
                 System.out.println( key+": "+value);
-            } else {
-                if(row.getText().contains(" / 10")){
-                    String key = "Rating";
-                    String value = row.getText().split(" / 10")[0].trim();
-                    data.put(key, value);
-                    System.out.println( key+": "+value);
-                }if(row.getText().contains("Accepted")){
-                    String key = "Terms";
-                    String value = row.getText().trim();
-                    data.put(key, value);
-                    System.out.println( key+": "+value);
-                }
-
-
             }
+
+        }
+        for(WebElement roles: jobRoles) {
+            System.out.println(roles.getText());
+
+
         }
 
-      /*  for(WebElement row : rows2){
-            String fullText = row.getText();
-            System.out.println("other strings: " + fullText);
-        }*/
 
-        // 2. Extraer Listas (Skills, Job Roles)
+            // 2. Extraer Listas (Skills, Job Roles)
         // Esto requiere lógica específica porque los Chips no tienen un "Label" pegado igual que los textos
         data.put("Skills", getChipsText("Skills"));
         data.put("Job Roles", getChipsText("Job Roles"));

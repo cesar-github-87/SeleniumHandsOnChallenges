@@ -127,8 +127,7 @@ public class JobPage {
 
         Map<String, String> data = new HashMap<>();
 
-        // 1. Extraer pares simples (Name, Email, Gender, etc.)
-        // Buscamos los párrafos que contienen etiquetas <strong>
+
         List<WebElement> singleRows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
         List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
        // WebElement terms = ;

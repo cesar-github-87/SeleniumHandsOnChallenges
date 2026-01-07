@@ -13,9 +13,21 @@ import java.util.Map;
 
 public class JobPage {
     WebDriver driver;
+    protected WebDriverWait wait;
+
+    By previewButtonLocator = By.xpath("//button[text()='Preview']");
 
     public JobPage(WebDriver driver){
-        this.driver=driver;
+        this.driver = driver;
+        this.wait = new WebDriverWait(this.driver, Duration.ofSeconds(10));
+    }
+
+    public PreviewModal clickPreviewButton()
+    {
+        WebElement previewMoal = wait.until(ExpectedConditions.visibilityOfElementLocated(previewButtonLocator));
+        previewMoal.click();
+
+        return new PreviewModal(driver);
     }
 
     public void fillPersonaData(String salut, String fName,  String lName, String eMail, String mobile, String gender, String lang){
@@ -129,7 +141,7 @@ public class JobPage {
 
 
         List<WebElement> singleRows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
-        List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
+        //List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
 
 
         for (WebElement row : singleRows) {
@@ -140,16 +152,21 @@ public class JobPage {
                 String key = parts[0].trim();
                 String value = parts[1].trim();
                 data.put(key, value);
-                System.out.println( key+": "+value);
+                //  System.out.println( key+": "+value);
+            }else{
+                if(row.getText().contains(" / 10")){
+                    String key = "Rating";
+                    String value = row.getText().split(" / 10")[0].trim();
+                    data.put(key, value);
+
+                }if(row.getText().contains("Accepted")){
+                    String key = "Terms";
+                    String value = row.getText().trim();
+                    data.put(key, value);
+
+                }
             }
-
         }
-        for(WebElement roles: jobRoles) {
-            System.out.println(roles.getText());
-
-
-        }
-
 
             // 2. Extraer Listas (Skills, Job Roles)
         // Esto requiere lógica específica porque los Chips no tienen un "Label" pegado igual que los textos
@@ -175,6 +192,10 @@ public class JobPage {
         return String.join(", ", chipTexts);
     }
 
+    public String getText(By locator)
+    {
+        return driver.findElement(locator).getText();
+    }
 
     public void selectdRating(Integer rate){
 

@@ -14,10 +14,14 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import pageClasses.JobPage;
 import pageClasses.PageManager;
+import pageClasses.PreviewModal;
 
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 //import pageClasses.SocialMediaPage;
 
 public class JobApplicationChallengeTest {
@@ -198,8 +202,20 @@ public class JobApplicationChallengeTest {
          * Click Preview button
          * Verify JSON preview matches entered data
          */
+
+        String salutation = "Mr";
+        String firstName = "Alcachofo";
+        String lastName = "Cacerolo";
+        String eMail = "criptico@test.com";
+        String mobile = "1234567890";
+        String gender = "Male";
+        String language = "English";
+
         jp = new JobPage(driver);
-        jp.fillPersonaData("MR","Cesar","Barragan","cesar.bh87@gmail.com","1234567890","Male","English");
+        //jp.fillPersonaData("MR","Cesar","Barragan","cesar.bh87@gmail.com","1234567890","Male","English");
+
+        jp.fillPersonaData(salutation, firstName, lastName, eMail, mobile, gender, language);
+
         String projectPath = System.getProperty("user.dir");
         System.out.println(projectPath);
         String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Cesar_Barragan_Resume_2025-11.pdf").toAbsolutePath().toString();
@@ -217,23 +233,30 @@ public class JobApplicationChallengeTest {
 
         WebElement accept =  driver.findElement(By.xpath("//input[@name='termsAccepted']"));
         accept.click();
-        driver.findElement(By.xpath("//button[text()='Preview']")).click();
-        jp.getPreviewData();
 
+        //driver.findElement(By.xpath("//button[text()='Preview']")).click();
+        //jp.getPreviewData();
 
+        //System.out.println(jp.getPreviewData());
+
+        PreviewModal previewModal = jp.clickPreviewButton();
+
+        Assert.assertEquals(previewModal.getSalutation(), salutation);
+        Assert.assertEquals(previewModal.getName(), firstName + " " + lastName);
+        Assert.assertEquals(previewModal.getEmail(), eMail);
+        Assert.assertEquals(previewModal.getMobile(), mobile);
+        Assert.assertEquals(previewModal.getGender(), gender);
+        Assert.assertEquals(previewModal.getLanguage(), language);
+
+        //Assert.assertEquals(jp.getPreviewData().get("Email"), eMail);
+        //Assert.assertEquals(jp.getPreviewData().get("Mobile"), mobile);
     }
 
-
-/*
     @AfterMethod
     public void tearDown(Method method) {
 
         driver.quit();
-    }*/
-
-
-
-
+    }
 }
 
 

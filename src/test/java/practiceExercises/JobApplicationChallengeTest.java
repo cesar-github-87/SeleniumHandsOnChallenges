@@ -18,6 +18,8 @@ import pageClasses.PageManager;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 //import pageClasses.SocialMediaPage;
 
 public class JobApplicationChallengeTest {
@@ -198,6 +200,10 @@ public class JobApplicationChallengeTest {
          * Click Preview button
          * Verify JSON preview matches entered data
          */
+
+
+
+
         jp = new JobPage(driver);
         jp.fillPersonaData("MR","Cesar","Barragan","cesar.bh87@gmail.com","1234567890","Male","English");
         String projectPath = System.getProperty("user.dir");
@@ -218,7 +224,7 @@ public class JobApplicationChallengeTest {
         WebElement accept =  driver.findElement(By.xpath("//input[@name='termsAccepted']"));
         accept.click();
         driver.findElement(By.xpath("//button[text()='Preview']")).click();
-        jp.getPreviewData();
+        System.out.println(jp.getPreviewData());
 
 
     }

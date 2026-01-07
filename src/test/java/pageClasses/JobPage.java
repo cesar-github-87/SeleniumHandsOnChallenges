@@ -100,7 +100,7 @@ public class JobPage {
 
         WebElement slider = driver.findElement(By.xpath("//span[contains(@class,'MuiSlider-rail')]"));
         int width = slider.getSize().width;
-        System.out.println("Width "+ width);
+
         thumb.click();
         actions.dragAndDropBy(thumb,(width/10*rate),0).build().perform();
 
@@ -126,11 +126,7 @@ public class JobPage {
     public Map<String, String> getPreviewData() {
 
         Map<String, String> data = new HashMap<>();
-
-
         List<WebElement> singleRows = driver.findElements(By.xpath("//div[contains(@class,'MuiDialogContent-root')]//p[contains(@class, 'MuiTypography-body1')]"));
-        List<WebElement> jobRoles =  driver.findElements(By.xpath("//div[contains(@class,'MuiDialog')]//h6[normalize-space()='Job Roles']/following-sibling::div//span"));
-
 
         for (WebElement row : singleRows) {
             // El texto viene como "Name: cesar c". Lo separamos.
@@ -140,19 +136,21 @@ public class JobPage {
                 String key = parts[0].trim();
                 String value = parts[1].trim();
                 data.put(key, value);
-                System.out.println( key+": "+value);
+
+            }else{
+                if(row.getText().contains(" / 10")){
+                    String key = "Rating";
+                    String value = row.getText().split(" / 10")[0].trim();
+                    data.put(key, value);
+
+                }if(row.getText().contains("Accepted")){
+                    String key = "Terms";
+                    String value = row.getText().trim();
+                    data.put(key, value);
+                }
             }
 
         }
-        for(WebElement roles: jobRoles) {
-            System.out.println(roles.getText());
-
-
-        }
-
-
-            // 2. Extraer Listas (Skills, Job Roles)
-        // Esto requiere lógica específica porque los Chips no tienen un "Label" pegado igual que los textos
         data.put("Skills", getChipsText("Skills"));
         data.put("Job Roles", getChipsText("Job Roles"));
 
@@ -162,7 +160,8 @@ public class JobPage {
     //Método auxiliar para obtener texto de los Chips basado en el título de la sección
     private String getChipsText(String sectionTitle) {
         // XPath avanzado: Busca el título h6, luego el siguiente div hermano, y dentro los chips
-        String xpath = String.format("//h6[text()='%s']/following-sibling::div[1]//span[contains(@class, 'MuiChip-label')]", sectionTitle);
+
+        String xpath = String.format("//div[@role='dialog']//h6[text()='%s']/following-sibling::div[1]//span[contains(@class, 'MuiChip-label')]", sectionTitle);
 
         List<WebElement> chips = driver.findElements(By.xpath(xpath));
         List<String> chipTexts = new ArrayList<>();
@@ -176,14 +175,7 @@ public class JobPage {
     }
 
 
-    public void selectdRating(Integer rate){
 
-
-
-
-
-
-    }
 
 }
 

@@ -1,10 +1,9 @@
 package practiceExercises;
 
-import org.openqa.selenium.By;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.WebElement;
+import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
+import org.openqa.selenium.interactions.Actions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.Wait;
 import org.openqa.selenium.support.ui.WebDriverWait;
@@ -19,6 +18,7 @@ import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 //import pageClasses.SocialMediaPage;
 
@@ -34,7 +34,23 @@ public class JobApplicationChallengeTest {
     @BeforeMethod
     public void instantiate(){
         options = new ChromeOptions();
-       // options.addArguments("--headless");
+
+
+        // 1. Crear mapa de preferencias
+        Map<String, Object> prefs = new HashMap<>();
+        // "0" significa desactivar el popup. Chrome guardará automáticamente.
+        prefs.put("profile.default_content_settings.popups", 0);
+        // CRUCIAL: Le dices explícitamente "No me preguntes dónde guardar"
+        prefs.put("download.prompt_for_download", false);
+        // Define una ruta segura (aunque uses el truco de chrome://downloads, Chrome necesita una carpeta física)
+        String downloadPath = Paths.get(System.getProperty("user.dir"), "target", "downloads").toString();
+        System.out.println("Download Path: " + downloadPath);
+        prefs.put("download.default_directory", downloadPath);
+        // Evita que bloquee archivos "peligrosos" (xml, exe, jar) que pausan la descarga
+        prefs.put("safebrowsing.enabled", true);
+        // Inyectar las preferencias
+
+        // options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -200,12 +216,18 @@ public class JobApplicationChallengeTest {
          * Click Preview button
          * Verify JSON preview matches entered data
          */
-
+        String name = "Cesar";
+        String lName =  "Barragan";
+        String salut = "Mr.";
+        String email = "cesar.bh87@gmail.com";
+        String phone = "1234567890";
+        String gender = "Male";
+        String lang = "English";
 
 
 
         jp = new JobPage(driver);
-        jp.fillPersonaData("MR","Cesar","Barragan","cesar.bh87@gmail.com","1234567890","Male","English");
+        jp.fillPersonaData(salut,name,lName,email,phone,gender,lang);
         String projectPath = System.getProperty("user.dir");
         System.out.println(projectPath);
         String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Cesar_Barragan_Resume_2025-11.pdf").toAbsolutePath().toString();
@@ -226,9 +248,125 @@ public class JobApplicationChallengeTest {
         driver.findElement(By.xpath("//button[text()='Preview']")).click();
         System.out.println(jp.getPreviewData());
 
+        Assert.assertEquals(jp.getPreviewData().get("Email"), email);
+        Assert.assertEquals(jp.getPreviewData().get("Name"), name+" "+lName);
+        Assert.assertEquals(jp.getPreviewData().get("Salutation"), salut);
+        Assert.assertEquals(jp.getPreviewData().get("Time"), "23:25");
 
     }
 
+    @Test
+    public void JAF_006_Clear_All_Form_Fields(){
+        /*
+        * Fill some fields in the form
+          Click Clear button
+          Verify all fields reset to defaults
+        * */
+        jp = new JobPage(driver);
+
+        String name = "Cesar";
+        String lName =  "Barragan";
+        String salut = "Mr.";
+        String email = "cesar.bh87@gmail.com";
+        String phone = "1234567890";
+        String gender = "Male";
+        String lang = "English";
+
+        String projectPath = System.getProperty("user.dir");
+        System.out.println(projectPath);
+        String filePath = Paths.get(System.getProperty("user.dir"), "src", "test", "resources", "Cesar_Barragan_Resume_2025-11.pdf").toAbsolutePath().toString();
+
+        By fileLocator = By.xpath("//input[@type='file']");
+        Actions action = new Actions(driver);
+        action.moveToElement(driver.findElement(fileLocator)).perform();
+        driver.findElement(fileLocator).sendKeys(filePath);
+
+
+        jp.fillPersonaData(salut,name,lName,email,phone,gender,lang);
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        By resumeLoc =  By.xpath("//p[text()=\"Resume:\"]");
+
+        driver.findElement(By.xpath("//button[text()='Clear']")).click();
+
+        Boolean noResume = wait.until(ExpectedConditions.invisibilityOfElementLocated(resumeLoc));
+        Assert.assertTrue(noResume);
+
+        Assert.assertNull(jp.getPreviewData().get("Email"));
+        Assert.assertNull(jp.getPreviewData().get("Name"));
+        Assert.assertNull(jp.getPreviewData().get("Salutation"));
+        Assert.assertNull(jp.getPreviewData().get("Time"));
+
+
+    }
+
+    @Test
+    public void JAF_007_Download_JSON() throws InterruptedException {
+        /*
+        Fill first name and last name fields
+        Click Download button
+        Verify file downloads as 'FirstName.LastName.json'
+        * */
+        String name = "Cesar";
+        String lName =  "Barragan";
+
+        jp = new JobPage(driver);
+        jp.fillPersonaData("", name, lName, "cesr@dsfa.com","","","");
+
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+
+        WebElement download = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[text()='Download']")));
+
+
+        //Thread.sleep(500);
+        download.click();
+        download.click();
+
+
+    }
+
+    /*
+    @Test
+    public void newTest() throws InterruptedException {
+        driver.get("https://amazon.com.mx");
+        Thread.sleep(35000);
+        Actions action = new Actions(driver);
+
+
+        WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
+        By historial = By.xpath("//div[@class=\"a-carousel-row-inner\"]//div[@class=\"a-section a-spacing-mini\"]");
+
+        do{
+            action.sendKeys(Keys.END).pause(Duration.ofMillis(1500)).perform();
+            action.moveToElement()
+
+        }while(!isElementDisplayed(historial, wait));
+
+        List<WebElement> hist = driver.findElements(By.xpath("//div[@class=\"a-carousel-row-inner\"]//div[@class=\"a-section a-spacing-mini\"]"));
+        for(WebElement h:hist){
+            System.out.println("here");
+            System.out.println(h.getAttribute("alt"));
+        }
+/*
+
+
+    }
+
+    public boolean isElementDisplayed(By locator, WebDriverWait wait)
+    {
+
+        try
+        {
+            wait.until(ExpectedConditions.presenceOfElementLocated(locator));
+            return true;
+        }
+        catch(TimeoutException e)
+        {
+            return false;
+        }
+    }
+*/
 
 /*
     @AfterMethod
@@ -236,6 +374,7 @@ public class JobApplicationChallengeTest {
 
         driver.quit();
     }*/
+
 
 
 

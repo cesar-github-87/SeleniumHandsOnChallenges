@@ -14,6 +14,7 @@ import org.testng.annotations.Test;
 import pageClasses.JobPage;
 import pageClasses.PageManager;
 
+import java.io.File;
 import java.lang.reflect.Method;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -49,8 +50,9 @@ public class JobApplicationChallengeTest {
         // Evita que bloquee archivos "peligrosos" (xml, exe, jar) que pausan la descarga
         prefs.put("safebrowsing.enabled", true);
         // Inyectar las preferencias
+        options.setExperimentalOption("prefs", prefs);
 
-        // options.addArguments("--headless=new");
+        //options.addArguments("--headless=new");
         options.addArguments("--no-sandbox");
         options.addArguments("--disable-dev-shm-usage");
         options.addArguments("--window-size=1920,1080");
@@ -64,7 +66,6 @@ public class JobApplicationChallengeTest {
         driver.manage().window().maximize();
 
     }
-
 
     @Test
     public void JAF_001_subnit_Form_with_Valid_Data(){
@@ -119,7 +120,6 @@ public class JobApplicationChallengeTest {
 
 
     }
-
 
     @Test
     public void JAF_002_Attempt_invalid_eMail(){
@@ -178,7 +178,6 @@ public class JobApplicationChallengeTest {
         Assert.assertEquals(errorMui.getText(),"Only .pdf or .docx allowed");
 
     }
-
 
     @Test
     public void JAF_004_Add_and_delete_skill_chips(){
@@ -311,17 +310,42 @@ public class JobApplicationChallengeTest {
         String lName =  "Barragan";
 
         jp = new JobPage(driver);
-        jp.fillPersonaData("", name, lName, "cesr@dsfa.com","","","");
+        jp.fillPersonaData("", name, lName, "cesr@dsfa.com","","Male","English");
 
 
         WebDriverWait wait = new WebDriverWait(driver, Duration.ofSeconds(10));
 
         WebElement download = wait.until(ExpectedConditions.elementToBeClickable(By.xpath("//button[text()='Download']")));
-
-
+       // jp.enterTime("1125p");
+       // WebElement accept =  driver.findElement(By.xpath("//input[@name='termsAccepted']"));
+        //accept.click();
+        System.out.println("pinchi boton: "+download.getText());
         //Thread.sleep(500);
-        download.click();
-        download.click();
+        new Actions(driver)
+                .moveToElement(download)
+                .clickAndHold(download)
+                .release(download)
+                .perform();
+
+        Thread.sleep(2000);
+
+        String projectPath = System.getProperty("user.dir");
+        String downloadPath = Paths.get(projectPath, "target", "downloads").toString();
+
+        File dir = new File(downloadPath);
+        File[] files = dir.listFiles();
+
+        System.out.println("--- Contenido de la carpeta ---");
+        if (files != null && files.length > 0) {
+            for (File file : files) {
+                String jsonName = file.getName();
+                System.out.println("Encontrado: " + jsonName);
+                Assert.assertTrue(jsonName.equals(name+"."+lName+".json"));
+            }
+        } else {
+            System.out.println("La carpeta está VACÍA.");
+        }
+
 
 
     }
